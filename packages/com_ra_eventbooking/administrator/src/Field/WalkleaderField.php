@@ -37,7 +37,7 @@ class WalkleaderField extends FormField {
         $html = '<select class="form-select" name="' . $this->name . '" value="' . $this->value . '" >';
         $html .= '<option value="0">Not required</option>';
         foreach ($options as $option) {
-            if ($this->value === $option->value) {
+            if ($this->value === strval($option->value)) {
                 $html .= '<option value="' . $option->value . '" selected="selected">' . $option->text . '</option>';
             } else {
                 $html .= '<option value="' . $option->value . '">' . $option->text . '</option>';

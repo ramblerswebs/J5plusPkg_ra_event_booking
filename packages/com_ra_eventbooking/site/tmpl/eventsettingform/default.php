@@ -30,7 +30,7 @@ $user = Factory::getApplication()->getIdentity();
 $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
 ?>
 
-<div class="eventsetting-edit front-end-edit" style="max-width:600px;">
+<div class="eventsetting-edit front-end-edit" >
 
     <?php if ($this->params->get('show_page_heading')) : ?>
         <div class="page-header">
@@ -43,7 +43,7 @@ $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
         </h3>
     <?php else : ?>
         <?php if (!empty($this->item->id)): ?>
-            <h1><?php // echo Text::sprintf('COM_RA_EVENTBOOKING_EDIT_ITEM_TITLE', $this->item->id);                  ?></h1>
+            <h1><?php // echo Text::sprintf('COM_RA_EVENTBOOKING_EDIT_ITEM_TITLE', $this->item->id);                     ?></h1>
         <?php else: ?>
             <h1><?php echo Text::_('COM_RA_EVENTBOOKING_ADD_ITEM_TITLE'); ?></h1>
         <?php endif; ?>
@@ -85,6 +85,10 @@ $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
                 echo HTMLHelper::_('uitab.endTab');
                 echo HTMLHelper::_('uitab.addTab', 'myTab', 'comms', Text::_('Comms'));
                 echo $this->form->renderField('booking_contact_id', 'params');
+                echo $this->form->renderField('email_booking', 'params');
+                echo $this->form->renderField('notrecommended', 'params');
+                echo $this->form->renderField('email_waiting', 'params');
+                echo $this->form->renderField('send_both_contacts', 'params');
                 echo $this->form->renderField('email_format', 'params');
                 echo $this->form->renderField('customsignature', 'params');
                 echo $this->form->renderField('signature', 'params');
@@ -99,8 +103,9 @@ $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
                 echo HTMLHelper::_('uitab.addTab', 'myTab', 'event', Text::_('Event Details'));
                 $ebRecord = helper::getEVB($this->item, 'Internal');
                 if ($ebRecord !== null) {
-                    echo $ebRecord->getEventData();
-                    echo $ebRecord->getBookingTable();
+                    echo $ebRecord->displayEventData();
+                    echo $ebRecord->displayBookingTable();
+                    echo $ebRecord->displayWaitingTable();
                 } else {
                     echo '<h3>Event data not available</h3>';
                 }

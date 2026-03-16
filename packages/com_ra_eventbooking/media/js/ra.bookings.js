@@ -24,13 +24,13 @@ ra.bookings = function (tag, ewid, ew, ics) {
     this.elements = null;
     this.evb = null;
     this.user = null;
-    this.formModal = null;
-    this.lastNoAttendees = 0;
-    this.fullyBooked = false;
+     this.lastNoAttendees = 0;
+    this.wasfullyBooked = false;
     this.container = document.createElement("div");
     this.container.classList.add('walkitem');
     this.container.classList.add('bookings');
     tag.appendChild(this.container);
+    var _this = this;
     this.initialise = function () {
         this.container.innerHTML = '';
         var tags = [
@@ -43,18 +43,11 @@ ra.bookings = function (tag, ewid, ew, ics) {
         var self = this;
         this.elements.bookingButton.style.display = 'none';
         this.elements.bookingButton.addEventListener('click', function () {
-            var div = document.createElement("div");
-            div.style.display = "inline-block";
-            self.formModal = ra.modals.createModal(div, false);
             var form = new ra.bookings.formBooking(self.user, self.ewid, self.ew, self.evb, self.ics);
-            form.display(div);
+            form.display();
         });
         document.addEventListener('bookingInfoChanged', function (e) {
             self.container.innerHTML = '';
-            if (self.formModal !== null) {
-                self.formModal.close();
-                //self.formModal = null;// why does this stop it working??
-            }
             self.initialise();
         });
         var data = {ewid: this.ewid};
@@ -89,7 +82,7 @@ ra.bookings = function (tag, ewid, ew, ics) {
         var noAttendees = this.evb.noAttendees();
         // if this is a redisplay after a user action and the no attendees have reduced
         // then we send the notify list an email
-        if (this.fullyBooked && noAttendees < this.lastNoAttendees) {
+        if (this.wasfullyBooked && noAttendees < this.lastNoAttendees) {
             if (this.evb.wlc.noWaiting() > 0) {
                 var data = {ewid: this.ewid};
                 var sa = new ra.bookings.queryServer(this, 'NotifyListEmail');
@@ -98,6 +91,6 @@ ra.bookings = function (tag, ewid, ew, ics) {
             }
         }
         this.lastNoAttendees = noAttendees;
-        this.fullyBooked = this.evb.isFullyBooked();
+        this.wasfullyBooked = this.evb.isFullyBooked();
     };
 };

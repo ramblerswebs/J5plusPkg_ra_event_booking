@@ -72,9 +72,6 @@
     </plugins>
     
 
-    <updateservers>
-        <server type="extension" priority="1" name="Ramblers-webs Event Booking">https://raw.githubusercontent.com/ramblerswebs/updates/master/updates/com_ra_event_booking.xml</server>
-    </updateservers>
 </extension>
 <!-- Component built by the Joomla Component Creator -->
 <!-- http://www.component-creator.com/ -->

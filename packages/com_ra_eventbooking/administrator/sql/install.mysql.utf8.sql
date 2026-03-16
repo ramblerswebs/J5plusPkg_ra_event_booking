@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS `#__ra_event_bookings` (
 `event_data` LONGTEXT NULL ,
 `created_by` INT(11) NULL DEFAULT 0,
 `creation_date` DATETIME NULL DEFAULT NULL ,
-`walk_leader_id` INT(11) NULL DEFAULT NULL,
 `params` text NOT NULL,
 PRIMARY KEY (`id`)
 ,KEY `idx_state` (`state`)

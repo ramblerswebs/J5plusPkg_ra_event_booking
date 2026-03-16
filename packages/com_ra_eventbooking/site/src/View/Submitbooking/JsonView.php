@@ -45,8 +45,7 @@ class JsonView extends BaseJsonView {
         // send email to booker and contact
 
         try {
-            helper::emailBookingListOnClosed();
-            $siteUrl = Uri::root();
+
             $feedback = [];
             $data = helper::getPostedData();
             $ewid = $data->ewid;
@@ -64,6 +63,9 @@ class JsonView extends BaseJsonView {
             }
             // retrieve current booking data
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
+            if ($ebRecord === null) {
+                throw new \RuntimeException('Invalid input: event not found');
+            }
             $guest = $ebRecord->options->guest;
             $maxattendees = $ebRecord->options->maxattendees;
             $maxguestattendees = $ebRecord->options->maxguestattendees;
@@ -76,6 +78,9 @@ class JsonView extends BaseJsonView {
             $member = $bookingData->member;
             $attendees = $bookingData->attendees;
             $paid = $bookingData->paid;
+            if ($member !== 'Yes' && $ebRecord->options->attendeetype === 'memonly') {
+                throw new \RuntimeException('Booking rejected, event is only open to Ramblers Members');
+            }
             $newBooking = helper::getNewBooking($id, $name, $email, $telephone, $member, $attendees, $paid, "Internal");
 
             $ebRecord->checkBooking($newBooking);
@@ -83,13 +88,8 @@ class JsonView extends BaseJsonView {
             $ebRecord->updateDatabase('Booking');
             if ($newBooking->noAttendees() > 0) {
                 $feedback[] = '<h3>You have been booked on this event</h3>';
-                $emailTemplate = 'newbooking.html';
-                $action = 'BOOKING';
             } else {
                 $feedback[] = '<h3>Your booking for this event has been removed/cancelled</h3>';
-                $emailTemplate = 'removebooking.html';
-                $action = 'CANCEL';
-                $attach = null;
             }
 
             $isWaiting = $ebRecord->wlc->isWaiting($email);
@@ -98,16 +98,11 @@ class JsonView extends BaseJsonView {
                 $ebRecord->updateDatabase('Waiting');
                 $feedback[] = '<h3>We have removed you from the waiting list</h3>';
             }
-
-            // send email confirmation
-            $to[] = $newBooking;
-            $replyTo = $ebRecord->getEventContact();
-            $copyTo = $ebRecord->getEventContact();
-            $title = $ebRecord->getEmailTitle($action);
-            $content = helper::getEmailTemplate($emailTemplate, $ebRecord);
-            $cancelURL = $siteUrl . '?option=com_ra_eventbooking&view=cancelbooking&id=' . $ewid . '&cancel=' . md5($email);
-            $content = str_replace('{cancelUrl}', $cancelURL, $content);
-            helper::sendEmailsToUser($to, $copyTo, $replyTo, $title, $content, $attach);
+            if ($newBooking->noAttendees() > 0) {
+                $this->emailUserBooking($ebRecord, $newBooking, $attach);
+            } else {
+                $this->emailUserCancelled($ebRecord, $newBooking);
+            }
 
             $record = (object) [
                         'feedback' => $feedback
@@ -116,6 +111,42 @@ class JsonView extends BaseJsonView {
         } catch (Exception $e) {
             echo new JsonResponse($e);
         }
+    }
+
+    private function emailUserBooking($ebRecord, $currentBooking, $attach) {
+        $emailTemplate = 'newbooking.html';
+        $action = 'BOOKING';
+        $ewid = $ebRecord->event_id;
+        $email = $currentBooking->email;
+        $to[] = $currentBooking;
+        $replyTo = $ebRecord->getEventContact();
+        $copyTo = null;
+        if ($ebRecord->options->email_booking === 'individual') {
+            $copyTo = helper::getEventContacts($ebRecord);
+        }
+        $title = $ebRecord->getEmailTitle($action);
+        $content = helper::getEmailTemplate($emailTemplate, $ebRecord);
+        $siteUrl = Uri::root();
+        $cancelURL = $siteUrl . '?option=com_ra_eventbooking&view=cancelbooking&id=' . $ewid . '&cancel=' . md5($email);
+        $content = str_replace('{cancelUrl}', $cancelURL, $content);
+        helper::sendEmailsToUser($to, $copyTo, $replyTo, $title, $content, $attach);
+        helper::sendBookingListUpdate($ebRecord);
+    }
+
+    private function emailUserCancelled($ebRecord, $currentBooking) {
+        // send user and booking contacts email
+        $emailTemplate = 'removebooking.html';
+        $attach = null;
+        $to[] = $currentBooking;
+        $replyTo = $ebRecord->getEventContact();
+        $copyTo = null;
+        if ($ebRecord->options->email_booking === 'individual') {
+            $copyTo = helper::getEventContacts($ebRecord);
+        }
+        $title = $ebRecord->getEmailTitle('CANCEL');
+        $content = helper::getEmailTemplate($emailTemplate, $ebRecord);
+        helper::sendEmailsToUser($to, $copyTo, $replyTo, $title, $content, $attach);
+        helper::sendBookingListUpdate($ebRecord);
     }
 
     private static function checkInput($guest, $maxattendees, $maxguestattendees, $bookingData) {

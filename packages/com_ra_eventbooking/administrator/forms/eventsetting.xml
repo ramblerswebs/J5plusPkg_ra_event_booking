@@ -65,34 +65,10 @@
                 <option value="memonly">Members Only</option>
                 <option value="public">Non members welcome</option>
             </field>
-            <field name="payment_required" 
-                   type="list" 
-                   useglobal="true"
-                   label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_PAYMENT_REQUIRED" 
-                   description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_PAYMENT_REQUIRED" 
-                   hint="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_PAYMENT_REQUIRED"
-            >
-                <option value="0">JNO</option>
-                <option value="1">JYES</option>
-            </field>
-            <field name="payment_details" 
-                   showon="payment_required:1"
-                   height="250"
-                   filter="safehtml" 
-                   type="editor" 
-                   useglobal="true"
-                   label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_PAYMENT_DETAILS" 
-                   description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_PAYMENT_DETAILS" 
-                   hint="Description of what payment is required."
-            />
-
-            <field 
-                name="booking_contact_id" 
-                type="Bookingcontact" 
-                useglobal="true" 
-                label="COM_RA_EVENTBOOKING_FORM_LBL_GROUP_CONTACT" 
-                description="COM_RA_EVENTBOOKING_FORM_DESC_GROUP_CONTACT" 
-            />
+            
+            
+            
+            // user access
             <field 
                 name="maxattendees" 
                 first="1" last="10" step="1" type="integer" 
@@ -111,7 +87,7 @@
             >
                 <option value="0">JNO</option>
                 <option value="1">JYES</option>
-            </field>       
+            </field>  
             <field name="userlistvisibletousers" 
                    type="list" 
                    useglobal="true" 
@@ -123,27 +99,10 @@
                
                 <option value="0">JNO</option>
                 <option value="1">JYES</option>
-            </field>
-            <field name="closingoption" 
-                   type="list"   
-                   useglobal="true"      
-                   label="COM_RA_EVENTBOOKING_FORM_LBL_USERLISTCLOSING"
-                   description="COM_RA_EVENTBOOKING_FORM_DESC_USERLISTCLOSING">
-                <option value="start">When event starts</option>
-                <option value="6pm">6pm on the day before event</option>
-                <option value="6pmweek">6pm on a week before event</option>
-                <option value="7am">7am on the day</option>
-                <option value="7amweek">7am a week before</option>
-                <option value="custom">Custom</option>
-            </field>
-            <field name="customclosingdate" 
-                   showon="closingoption:custom"
-                   type="calendar" 
-                   showtime="true"
-                   default="NOW" 
-                   label="Set Closing date" 
-                   description="This is when the bookings for events will end" 
-                   format="%d-%m-%Y %H:%M" />
+            </field> 
+            
+            // guest access
+            
             <field name="guest" 
                    type="list" 
                    useglobal="true" 
@@ -190,32 +149,81 @@
                 <option value="0">JNO</option>
                 <option value="1">JYES</option>
             </field>
-            <field name="send_booking_list_onclosed" 
+            
+            // payments
+            
+            
+            
+            <field name="payment_required" 
                    type="list" 
                    useglobal="true"
-                   default=""
-                   validate="options"
-                   label="Send booking list when closed" 
-                   description="An email, containing the booking list, will be automatically sent to the Booking Contacts once the booking has closed." 
+                   label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_PAYMENT_REQUIRED" 
+                   description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_PAYMENT_REQUIRED" 
+                   hint="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_PAYMENT_REQUIRED"
             >
                 <option value="0">JNO</option>
                 <option value="1">JYES</option>
             </field>
-            <field name="task_comment" 
-                   type="note" 
-                   label="Set up task" 
-                   showon="send_booking_list_onclosed:1"
-                   description="For this option to work a scheduled task must be set up, see Users Guide for details" 
-                   class="alert alert-info" />
+            <field name="payment_details" 
+                   showon="payment_required:1"
+                   height="250"
+                   filter="safehtml" 
+                   type="editor" 
+                   useglobal="true"
+                   label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_PAYMENT_DETAILS" 
+                   description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_PAYMENT_DETAILS" 
+                   hint="Description of what payment is required."
+            />
+            
+            
+            // comms    
+
             <field 
-                name="walk_leader_id" 
-                type="Walkleader" 
-                required="false" 
-                showon="send_booking_list_onclosed:1"
-                label="Walk/Event Leader" 
-                description="OPTIONAL Walk/Event leader can be sent a copy of the bookings for their event" 
-                hint="Select user"
-            /> 
+                name="booking_contact_id" 
+                type="Bookingcontact" 
+                useglobal="true" 
+                label="Booking Contact" 
+                description="Select user who is acting as booking contact for this event" 
+            />
+       
+            <field name="email_booking" 
+                   useglobal="true" 
+                   type="list" 
+                   label="Booking notifications" 
+                   description="Send info to booking contact when booking/waiting list changes" 
+            >
+                <option value="none">No notifications</option>
+                <option value="individual">Send copy of booking change emails</option>
+                <option value="list">Send booking list email after each change</option>
+            </field>
+            <field name="notrecommended" 
+                       type="note" 
+                       label="Not recommended" 
+                       showon="email_booking:list"
+                       description="This option is not production ready, it currently takes a long time to send the emails" 
+                       class="alert alert-info" />
+            <field name="email_waiting" 
+                   useglobal="true" 
+                   showon="email_booking:individual,list"
+                   type="list" 
+                   label="Which changes" 
+                   description="Include waiting list changes as well as booking changes " 
+            >
+                <option value="0">Booking changes</option>
+                <option value="1">Booking and waiting list changes</option>
+            </field>
+            <field name="send_both_contacts" 
+                   type="list" 
+                   default="1"
+                   showon="email_booking:individual,list"
+                   label="Send to both booking contacts" 
+                   description="Send notifications to both booking contacts, when different" 
+            >
+                <option value="0">Just to Event contact</option>
+                <option value="1">To Event contact and group contact, if different</option>
+            </field>
+       
+            
             <field name="email_format" 
                    type="text" 
                    useglobal="true" 
@@ -248,6 +256,57 @@
                     <option name="startup_mode">design</option>  <!-- Forces visual mode -->
                 </editor-options>
             </field>
+            <field name="closingoption" 
+                   type="list"   
+                   useglobal="true"      
+                   label="COM_RA_EVENTBOOKING_FORM_LBL_USERLISTCLOSING"
+                   description="COM_RA_EVENTBOOKING_FORM_DESC_USERLISTCLOSING">
+                <option value="start">When event starts</option>
+                <option value="6pm">6pm on the day before event</option>
+                <option value="6pmweek">6pm on a week before event</option>
+                <option value="7am">7am on the day</option>
+                <option value="7amweek">7am a week before</option>
+                <option value="custom">Custom</option>
+            </field>
+            <field name="customclosingdate" 
+                   showon="closingoption:custom"
+                   type="calendar" 
+                   showtime="true"
+                   default="NOW" 
+                   label="Set Closing date" 
+                   description="This is when the bookings for events will end" 
+                   format="%Y-%m-%d %H:%M:%S" 
+            />
+       
+            <field name="send_booking_list_onclosed" 
+                   type="list" 
+                   useglobal="true"
+                   default=""
+                   validate="options"
+                   label="Send booking list when closed" 
+                   description="An email, containing the booking list, will be automatically sent to the Booking Contacts once the booking has closed." 
+            >
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="task_comment" 
+                   type="note" 
+                   label="Set up task" 
+                   showon="send_booking_list_onclosed:1"
+                   description="For this option to work a scheduled task must be set up, see Users Guide for details" 
+                   class="alert alert-info" />
+            <field 
+                name="walk_leader_id" 
+                type="Walkleader" 
+                required="false" 
+                showon="send_booking_list_onclosed:1"
+                label="Walk/Event Leader" 
+                description="OPTIONAL Walk/Event leader can be sent a copy of the bookings for their event" 
+                hint="Select user"
+            /> 
+        
+       
+     
            
         </fieldset>
     </fields>

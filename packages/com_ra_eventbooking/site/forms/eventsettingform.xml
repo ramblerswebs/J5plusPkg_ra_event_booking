@@ -46,62 +46,18 @@
                description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_EVENT_DATA"  
                hint="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_EVENT_DATA"
         />
-       
-        <field 
-            name="walk_leader_id" 
-            type="Walkleader" 
-            addfieldprefix="Joomla\Component\com_ra_eventbooking\Field" 
-            required="false" 
-            label="Walk/Event Leader" 
-            description="OPTIONAL Walk/Event leader can be sent a copy of the bookings for their event" 
-            hint="Select user"
-        /> 
-  
     </fieldset>
+           
     <fields name="params">  <!-- This becomes JSON automatically -->
         <fieldset name="params" label="Options">
+            
+            // Basic
             <field name="total_places" 
                    first="0" last="200" step="1" type="integer" 
                    useglobal="true" 
                    label="Total number of places" 
                    description="Total number of places or zero if unlimited places " 
-            />   
-            <field name="payment_required" 
-                   type="list" 
-                   useglobal="true" 
-                   label="Payment Required" 
-                   description="Does booking require a payment? " 
-                  
-            >
-                <option value="0">JNO</option>
-                <option value="1">JYES</option>
-            </field>
-            <field name="payment_details" 
-                   showon="payment_required:1"
-                   height="250"
-                   filter="safehtml" 
-                   type="editor" 
-                   editor="tiny_mce" 
-                   useglobal="true" 
-                   label="Payment Details" 
-                   description="Description of what payment is required." 
-            />
-            <field 
-                name="booking_contact_id" 
-                type="Bookingcontact" 
-                useglobal="true" 
-                default=""
-                label="Booking Contact" 
-                description="Who is the booking contact for this event " 
-            />
-            <field 
-                name="maxattendees" 
-                first="1" last="10" step="1" type="integer" 
-                useglobal="true" 
-                label="Max User Attendees" 
-                description="Max number of places that can be booked by one person [logged on]" 
-            />
-            />
+            /> 
             <field name="attendeetype" 
                    type="list" 
                    useglobal="true"
@@ -110,7 +66,16 @@
             >
                 <option value="memonly">Members Only</option>
                 <option value="public">Non members welcome</option>
-            </field>
+            </field>  
+            
+            // User
+            <field 
+                name="maxattendees" 
+                first="1" last="10" step="1" type="integer" 
+                useglobal="true" 
+                label="Max User Attendees" 
+                description="Max number of places that can be booked by one person [logged on]" 
+            />
             <field name="waitinglist" 
                    type="list" 
                    useglobal="true" 
@@ -120,7 +85,7 @@
             >
                 <option value="0">JNO</option>
                 <option value="1">JYES</option>
-            </field>       
+            </field>   
             <field name="userlistvisibletousers" 
                    type="list" 
                    useglobal="true" 
@@ -131,27 +96,8 @@
                 <option value="0">JNO</option>
                 <option value="1">JYES</option>
             </field>
-            <field name="closingoption" 
-                   type="list"   
-                   useglobal="true"      
-                   label="Closing time option for bookings"
-                   description="No more bookings will be taken after this time">
-                <option value="start">When event starts</option>
-                <option value="6pm">6pm on the day before event</option>
-                <option value="6pmweek">6pm on a week before event</option>
-                <option value="7am">7am on the day</option>
-                <option value="7amweek">7am a week before</option>
-                <option value="custom">Custom</option>
-            </field>
-            <field name="customclosingdate" 
-                   showon="closingoption:custom"
-                   type="calendar" 
-                   showtime="true"
-                   default="NOW" 
-                   label="Set Closing date" 
-                   description="This is when the bookings for events will end" 
-                   format="%d-%m-%Y %H:%M" />
-   
+            
+            // Guest
             <field name="guest" 
                    type="list" 
                    useglobal="true" 
@@ -194,6 +140,127 @@
                 <option value="0">JNO</option>
                 <option value="1">JYES</option>
             </field>
+            
+            // Payment
+            <field name="payment_required" 
+                   type="list" 
+                   useglobal="true" 
+                   label="Payment Required" 
+                   description="Does booking require a payment? " 
+                  
+            >
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="payment_details" 
+                   showon="payment_required:1"
+                   height="250"
+                   filter="safehtml" 
+                   type="editor" 
+                   editor="tiny_mce" 
+                   useglobal="true" 
+                   label="Payment Details" 
+                   description="Description of what payment is required." 
+            />
+            
+            // Comms
+          
+     
+            <field 
+                name="booking_contact_id" 
+                type="Bookingcontact" 
+                useglobal="true" 
+                default=""
+                label="Booking Contact" 
+                description="Who is the booking contact for this event " 
+            />
+            <field name="email_booking" 
+                   useglobal="true" 
+                   type="list" 
+                   label="Booking notifications" 
+                   description="Send info to booking contact when booking/waiting list changes" 
+            >
+                <option value="none">No notifications</option>
+                <option value="individual">Send copy of booking change emails</option>
+                <option value="list">Send booking list email after each change</option>
+            </field>
+            <field name="notrecommended" 
+                       type="note" 
+                       label="Not recommended" 
+                       showon="email_booking:list"
+                       description="This option is not production ready, it currently takes a long time to send the emails" 
+                       class="alert alert-info" />
+            <field name="email_waiting" 
+                   useglobal="true" 
+                   showon="email_booking:individual,list"
+                   type="list" 
+                   label="Which changes" 
+                   description="Include waiting list changes as well as booking changes " 
+            >
+                <option value="0">Booking changes</option>
+                <option value="1">Booking and waiting list changes</option>
+            </field>
+            <field name="send_both_contacts" 
+                   type="list" 
+                   default="1"
+                   showon="email_booking:individual,list"
+                   label="Send to both booking contacts" 
+                   description="Send notifications to both booking contacts, when different" 
+            >
+                <option value="0">Just to Event contact</option>
+                <option value="1">To Event contact and group contact, if different</option>
+            </field>
+            <field name="email_format" 
+                   type="text" 
+                   useglobal="true" 
+                   label="Email Title Format" 
+                   description="Optional format for email titles, default is {yy/mm/dd} {action} {title}." 
+                   hint="Email Title Format"
+            />
+            <field name="customsignature" 
+                   type="list" 
+                   filter="raw"
+                   useglobal="true" 
+                   label="Custom email signature" 
+                   description="Have a custom signature on all emails" 
+            >
+                <option value="0">JNO</option>
+                <option value="1">JYES</option>
+            </field>
+            <field name="signature" 
+                   showon="customsignature:1"
+                   height="250"
+                   filter="safehtml" 
+                   type="editor" 
+                   label="Email Signature" 
+                   description="Signature to use in place of default group name" 
+                   hint="Signature to use in place of default group name"
+            >
+                <editor-options>
+                    <option name="startup_mode">design</option>  <!-- Forces visual mode -->
+                </editor-options>
+            </field>
+            <field name="closingoption" 
+                   type="list"   
+                   useglobal="true"      
+                   label="Closing time option for bookings"
+                   description="No more bookings will be taken after this time">
+                <option value="start">When event starts</option>
+                <option value="6pm">6pm on the day before event</option>
+                <option value="6pmweek">6pm on a week before event</option>
+                <option value="7am">7am on the day</option>
+                <option value="7amweek">7am a week before</option>
+                <option value="custom">Custom</option>
+            </field>
+            <field name="customclosingdate" 
+                   showon="closingoption:custom"
+                   type="calendar" 
+                   showtime="true"
+                   default="NOW" 
+                   label="Set Closing date" 
+                   description="This is when the bookings for events will end" 
+                   format="%Y-%m-%d %H:%M:%S" 
+            />
             <field name="send_booking_list_onclosed" 
                    type="list" 
                    useglobal="true"
@@ -220,37 +287,7 @@
                 description="OPTIONAL Walk/Event leader can be sent a copy of the bookings for their event" 
                 hint="Select user"
             /> 
-            <field name="email_format" 
-                   type="text" 
-                   useglobal="true" 
-                   label="Email Title Format" 
-                   description="Optional format for email titles, default is {yy/mm/dd} {action} {title}." 
-                   hint="Email Title Format"
-            />
-            <field name="customsignature" 
-                   type="list" 
-                   filter="raw"
-                   useglobal="true" 
-                   label="Custom email signature" 
-                   description="Have a custom signature on all emails" 
-            >
-                <option value="0">JNO</option>
-                <option value="1">JYES</option>
-            </field>
-            <field name="signature" 
-                   showon="customsignature:1"
-                   height="250"
-                   filter="safehtml" 
-                   type="editor" 
-                                      label="Email Signature" 
-                   description="Signature to use in place of default group name" 
-                   hint="Signature to use in place of default group name"
-            >
-                <editor-options>
-                    <option name="startup_mode">design</option>  <!-- Forces visual mode -->
-                </editor-options>
-            </field>
-           
+    
         </fieldset>
     </fields>
    

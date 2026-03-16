@@ -29,10 +29,16 @@ class JsonView extends BaseJsonView {
     public function display($tpl = null) {
         try {
             $feedback = [];
+            $juser = Factory::getUser();
+            $canEdit = false;
+            if ($juser->id > 0) {
+                $canEdit = $juser->authorise('core.edit', 'com_ra_eventbooking');
+            }
             $data = helper::getPostedData();
             $ewid = $data->ewid;
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
-            $bookinglist = $ebRecord->getBookingTable();
+            $bookinglist = $ebRecord->getBookingTable($ebRecord->options->payment_required, $canEdit);
+            $waitinglist = $ebRecord->getWaitingTable($canEdit);
 
             $juser = Factory::getUser();
             $to = [helper::getSendTo($juser->name, $juser->email)];
@@ -47,6 +53,8 @@ class JsonView extends BaseJsonView {
             $title = $ebRecord->getEmailTitle('BOOKING LIST');
             $content = helper::getEmailTemplate('emailbookinglist.html', $ebRecord);
             $content = str_replace("{bookinglist}", $bookinglist, $content);
+            $content = str_replace("{waitinglist}", $waitinglist, $content);
+            $content = str_replace("{reason}", "", $content);
             helper::sendEmailsToUser($to, $copy, $replyTo, $title, $content);
 
             $feedback[] = '<h3>Email has been sent</h3>';

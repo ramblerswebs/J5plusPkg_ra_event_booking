@@ -143,7 +143,7 @@ class Ra_eventbookingHelper {
     }
 
     public static function getEVB($data, $mode) {
-        return new evb($data, $mode);
+        return new evb(self::class, $data, $mode);
     }
 
     public static function getEVBrecord($ewid, $mode) {
@@ -160,7 +160,7 @@ class Ra_eventbookingHelper {
         $db->setQuery($query);
         $result = $db->loadObject();
         if ($result !== null) {
-            return new evb($result, $mode);
+            return new evb(self::class, $result, $mode);
         }
         return null;
     }
@@ -177,7 +177,7 @@ class Ra_eventbookingHelper {
         $rows = $db->loadObjectList();
         $items = [];
         foreach ($rows as $row) {
-            $item = new evb($row, 'Summary');
+            $item = new evb(self::class, $row, 'Summary');
             array_push($items, $item);
         }
         return $items;
@@ -224,37 +224,76 @@ class Ra_eventbookingHelper {
         }
     }
 
-    // email booking list once the bookings have closed
-    public static function emailBookingListOnClosed() {
+    public static function sendBookingChangeEmail($evb, $md5Email, $cancel) {
 
-        $events = self::getAllEVBRecords();
-        foreach ($events as $event) {
-            if ($event->options->send_booking_list_onclosed) {
-                if ($event->isBookingClosed()) {
-                    self::sendEmailBookingOnClosed($event);
-                    self::resetEmailOnClosed($event);
-                }
-            }
+        $emailTemplate = 'removebooking.html';
+        $action = 'CANCEL';
+        $attach = null;
+        $currentBooking = $evb->blc->getItemByMd5Email($md5Email);
+
+        // send email confirmation
+        $to[] = $currentBooking;
+        $replyTo = $evb->getEventContact();
+        $copyTo = null;
+        if ($evb->options->email_booking === 'individual') {
+            $copyTo = helper::getEventContacts($evb);
         }
+        $title = $evb->getEmailTitle($action);
+        $content = helper::getEmailTemplate($emailTemplate, $evb);
+        $cancelURL = $siteUrl . '?option=com_ra_eventbooking&view=cancelbooking&id=' . $ewid . '&cancel=' . md5($email);
+        $content = str_replace('{cancelUrl}', $cancelURL, $content);
+        helper::sendEmailsToUser($to, $copyTo, $replyTo, $title, $content, $attach);
+
+        helper::sendBookingListUpdate($evb);
     }
 
-    private static function sendEmailBookingOnClosed($evb) {
-        $to = [];
-        $gc = self::getGroupContact();
-        $to[] = self::getSendTo($gc->name, $gc->email);
-        $ec = $evb->getEventContact();
-        $to[] = self::getSendTo($ec->name, $ec->email);
-
-        $wl = $evb->getWalkLeader();
-        if ($wl !== null) {
-            $to[] = self::getSendTo($wl->name, $wl->email);
+    public static function sendBookingListUpdate($evb) {
+        if ($evb->options->email_booking !== 'list') {
+            return;
         }
-        $to = self::uniqueByProperty($to, 'email');
+        $action = 'BOOKING CHANGE';
+        $to = self::getEventContacts($evb);
+        $copy = null;
         $replyTo = null;
-        $title = $evb->getEmailTitle('BOOKING JUST CLOSED');
-        $bookinglist = $evb->getBookingTable();
+        $bookinglist = $evb->blc->getBookingTable($evb->options->payment_required, true);
+
+        $waitinglist = $evb->getWaitingTable(true);
+
+        $title = $evb->getEmailTitle($action);
+        $content = self::getEmailTemplate('emailbookinglist.html', $evb);
+        $content = str_replace("{bookinglist}", $bookinglist, $content);
+        $content = str_replace("{waitinglist}", $waitinglist, $content);
+        $content = str_replace("{reason}", "A booking or the waiting list entry has been updated", $content);
+        self::sendEmailsToUser($to, $copy, $replyTo, $title, $content);
+    }
+
+    public static function getEventContacts($evb, $includeWalkLeader = false) {
+        $emails = [];
+        $ec = $evb->getEventContact();
+        $emails[] = self::getSendTo($ec->name, $ec->email);
+        if ($evb->options->send_both_contacts) {
+            $gc = self::getGroupContact();
+            $emails[] = self::getSendTo($gc->name, $gc->email);
+        }
+        if ($includeWalkLeader) {
+            $wl = $evb->getWalkLeader();
+            if ($wl !== null) {
+                $emails[] = self::getSendTo($wl->name, $wl->email);
+            }
+        }
+        return self::uniqueByProperty($emails, 'email');
+    }
+
+    public static function sendEmailBookingOnClosed($evb) {
+        // sent to booking contacts     
+        $to = self::getEventContacts($evb, true);
+        $replyTo = null;
+        $title = $evb->getEmailTitle('BOOKING CLOSED');
+        $bookinglist = $evb->blc->getBookingTable($evb->options->payment_required, true);
+        $waitinglist = $evb->getWaitingTable(true);
         $content = self::getEmailTemplate('emailbookinglistOnClosed.html', $evb);
         $content = str_replace("{bookinglist}", $bookinglist, $content);
+        $content = str_replace("{waitinglist}", $waitinglist, $content);
         self::sendEmailsToUser($to, null, $replyTo, $title, $content);
     }
 
@@ -271,7 +310,7 @@ class Ra_eventbookingHelper {
                 }));
     }
 
-    private static function resetEmailOnClosed($event) {
+    public static function resetEmailOnClosed($event) {
         $jsonparams = $event->params;
         $params = \json_decode($jsonparams);
         if ($params === null) {
@@ -417,7 +456,7 @@ class Ra_eventbookingHelper {
     }
 
     public static function getEmailTemplate($template, $evb) {
-        $filePath = JPATH_COMPONENT . '/src/Helper/templates/' . $template;
+        $filePath = JPATH_SITE . '/components/com_ra_eventbooking/src/Helper/templates/' . $template;
         $content = \file_get_contents($filePath);
         if (!$content) {
             throw new \RuntimeException('Unable to get content of email:' . $template);
@@ -476,24 +515,20 @@ class Ra_eventbookingHelper {
         $juser = Factory::getUser($options->booking_contact_id);
         $options->booking_contact_name = $juser->name;
         $options->booking_contact_md5email = md5($juser->email);
-        $options->attendeetype = $options->attendeetype;
-        $options->closingoption = $options->closingoption;
-        $options->email_format = $options->email_format;
         $options->guest = $options->guest === '1';
         $options->maxattendees = intval($options->maxattendees);
         $options->maxguestattendees = intval($options->maxguestattendees);
         $options->payment_required = $options->payment_required === '1';
-        $options->payment_details = $options->payment_details;
         $options->customsignature = $options->customsignature === '1';
-        $options->signature = $options->signature;
         $options->total_places = intval($options->total_places);
         $options->telephone_required = $options->telephone_required === '1';
         $options->userlistvisibletousers = $options->userlistvisibletousers === '1';
         $options->userlistvisibletoguests = $options->userlistvisibletoguests === '1';
         $options->waitinglist = $options->waitinglist === '1';
+        $options->email_waiting = $options->email_waiting === '1';
+        $options->send_both_contacts = $options->send_both_contacts === '1';
         $options->send_booking_list_onclosed = $options->send_booking_list_onclosed === '1';
         $options->walk_leader_id = intval($options->walk_leader_id);
-
         return $options;
     }
 }
@@ -507,8 +542,10 @@ class evb {
     public $options;
     public $params = null;
     public $actualClosingDate = null;
+    private $helper;
 
-    public function __construct($value, $mode) {
+    public function __construct($helper, $value, $mode) {
+        $this->helper = $helper;
         if ($value === null) {
             throw new \RuntimeException('Invalid EVB information [null]');
         }
@@ -530,36 +567,33 @@ class evb {
     }
 
     private function processParams($jsonparams) {
-        $options = \Ramblers\Component\Ra_eventbooking\Site\Helper\Ra_eventbookingHelper::getRawGlobals();
-        $params = \json_decode($jsonparams);
-        if ($params === null) {
-            $params = new \stdClass();
-        }
+        $globals = $this->helper::getRawGlobals();
+        $options = \json_decode($jsonparams);
+
         foreach ($options as $key => $value) {
-            $options->$key = $value;
-            if (property_exists($params, $key)) {
-                if ($params->$key !== "") {
-                    $options->$key = $params->$key;
+            if (property_exists($globals, $key)) {
+                if ($options->$key === "") {
+                    $options->$key = $globals->$key;
                 }
             }
         }
-        return \Ramblers\Component\Ra_eventbooking\Site\Helper\Ra_eventbookingHelper::fixParams($options);
+        return $this->helper::fixParams($options);
     }
 
     public function checkBooking($newBooking) {
         $currentNoAttendees = $this->blc->noAttendees();
         $extraPlaces = $newBooking->noAttendees();
-// check if user has existing booking
+        // check if user has existing booking
         $currentBooking = $this->blc->hasBooking($newBooking->email);
         if ($currentBooking !== null) {
             $extraPlaces = $extraPlaces - $currentBooking->noAttendees();
         }
-//  calc remaining places
+        //  calc remaining places
         $totalPlaces = $this->options->total_places;
         If ($totalPlaces === 0) {
             $totalPlaces = PHP_INT_MAX;
         }
-// check booking does not go over total allowed   
+        // check booking does not go over total allowed   
         if ($extraPlaces + $currentNoAttendees > $totalPlaces) {
             throw new \RuntimeException('Not enough spare places to make this booking');
         }
@@ -583,7 +617,7 @@ class evb {
         return $waiting->removeItemByMd5Email($md5Email);
     }
 
-    public function getBookingTable() {
+    public function displayBookingTable() {
         $juser = Factory::getUser();
         $canEdit = false;
         if ($juser->id > 0) {
@@ -605,6 +639,38 @@ class evb {
             return $this->blc->getBookingTable($this->options->payment_required, $canEdit);
         }
         return '';
+    }
+
+    public function getBookingTable($payment_required, $canEdit) {
+        return $this->blc->getBookingTable($payment_required, $canEdit);
+    }
+
+    public function displayWaitingTable() {
+        $juser = Factory::getUser();
+        $canEdit = false;
+        if ($juser->id > 0) {
+            $canEdit = $juser->authorise('core.edit', 'com_ra_eventbooking');
+        }
+        $userlistvisibletousers = $this->options->userlistvisibletousers;
+        $userlistvisibletoguests = $this->options->userlistvisibletoguests;
+        $canView = false;
+        if ($canEdit) {
+            $canView = true;
+        }
+        if ($userlistvisibletousers && $juser->id > 0) {
+            $canView = true;
+        }
+        if ($userlistvisibletoguests && $juser->id === 0) {
+            $canView = true;
+        }
+        if ($canView) {
+            return $this->wlc->getWaitingTable($canEdit);
+        }
+        return '';
+    }
+
+    public function getWaitingTable($canEdit) {
+        return $this->wlc->getWaitingTable($canEdit);
     }
 
     public function getEventContact() {
@@ -639,11 +705,11 @@ class evb {
         $this->event_data = $ed;
     }
 
-    public function getEventData() {
+    public function displayEventData() {
         if ($this->event_data === null OR $this->event_data === '') {
             return '<h3>Walk/Event data not available</h3>';
         }
-        return $this->event_data->getEventData();
+        return $this->event_data->displayEventData();
     }
 
     public function isBookingClosed() {
@@ -679,23 +745,24 @@ class evb {
             return null;
         }
         $startDate = new \DateTime($this->event_data->getDate());
+        $cldate = (clone $startDate);
         switch ($which) {
             case 'start':
-                return $this->event_data->getDate();
+                break;
             case '6pm':
-                $cldate = (clone $startDate)->modify('-1 day')->setTime(18, 0, 0);
+                $cldate = $cldate->modify('-1 day')->setTime(18, 0, 0);
                 break;
             case '6pmweek':
-                $cldate = (clone $startDate)->modify('-7 day')->setTime(18, 0, 0);
+                $cldate = $cldate->modify('-7 day')->setTime(18, 0, 0);
                 break;
             case '7am':
-                $cldate = (clone $startDate)->setTime(7, 0, 0);
+                $cldate = $cldate->setTime(7, 0, 0);
                 break;
             case '7amweek':
-                $cldate = (clone $startDate)->modify('-7 day')->setTime(7, 0, 0);
+                $cldate = $cldate->modify('-7 day')->setTime(7, 0, 0);
                 break;
             case 'custom':
-                return $this->option->customclosingdate;
+                return $this->options->customclosingdate;
         }
         return $cldate->format('Y-m-d H:i:s');
     }
@@ -734,13 +801,12 @@ class evb {
     }
 
     public function updateEmailPaymentText($content) {
+        $out = '';
         if ($this->options->payment_required) {
             $out = "<p>Please note that a payment is required for this event and your booking is not valid unless you follow the instructions below</p>";
             $out .= $this->options->payment_details;
-            return str_replace('{payment}', $out, $content);
-        } else {
-            return $content;
         }
+        return str_replace('{payment}', $out, $content);
     }
 
     public function updateDatabase($which) {
@@ -870,18 +936,19 @@ class blc implements \JsonSerializable {
         if (count($this->items) === 0) {
             return "<h3>No bookings at the moment</h3>";
         }
-        $out = "<h3>Bookings so far</h3>";
+        $out = "<h3>Bookings List</h3>";
         $out .= "<table>";
         $out .= "<thead><tr>";
         $out .= "<th>Name</th>";
         if ($canEdit) {
+            $out .= "<th>Status</th>";
             $out .= "<th>Email</th>";
         }
         if ($canEdit) {
             $out .= "<th>Member</th>";
             $out .= "<th>Telephone</th>";
         }
-        $out .= "<th>Attendees</th>";
+        $out .= "<th>Places</th>";
 
         if ($payment_required) {
             $out .= "<th>Paid</th>";
@@ -949,6 +1016,11 @@ class bli implements \JsonSerializable {
         $out = "<tr>";
         $out .= '<td>' . $this->name . '</td>';
         if ($canEdit) {
+            if ($this->id > 0) {
+                $out .= '<td>Registered</td>';
+            } else {
+                $out .= '<td>Guest</td>';
+            }
             $out .= '<td>' . $this->email . '</td>';
         }
         if ($canEdit) {
@@ -1067,6 +1139,29 @@ class wlc implements \JsonSerializable {
         return $to;
     }
 
+    public function getWaitingTable($canEdit = false) {
+        if (count($this->items) === 0) {
+            return "";
+        }
+        $out = "<h3>Waiting List</h3>";
+        $out .= "<table>";
+        $out .= "<thead><tr>";
+        $out .= "<th>Name</th>";
+        if ($canEdit) {
+            $out .= "<th>Status</th>";
+            $out .= "<th>Email</th>";
+        }
+        $out .= "</tr></thead>";
+        $out .= "<tbody>";
+
+        foreach ($this->items as $item) {
+            $out .= $item->getTableRow($canEdit);
+        }
+        $out .= "</tbody>";
+        $out .= "</table>";
+        return $out;
+    }
+
     #[\Override]
     public function jsonSerialize(): mixed {
         return $this->items;
@@ -1099,6 +1194,21 @@ class wli implements \JsonSerializable {
 
     public function isWaiting($email) {
         return $email === $this->email;
+    }
+
+    public function getTableRow($canEdit) {
+        $out = "<tr>";
+        $out .= '<td>' . $this->name . '</td>';
+        if ($canEdit) {
+            if ($this->id > 0) {
+                $out .= '<td>Registered</td>';
+            } else {
+                $out .= '<td>Guest</td>';
+            }
+            $out .= '<td>' . $this->email . '</td>';
+        }
+        $out .= "</tr>";
+        return $out;
     }
 
     #[\Override]
@@ -1179,7 +1289,7 @@ class eventData implements \JsonSerializable {
         }
     }
 
-    public function getEventData() {
+    public function displayEventData() {
         if ($this->date === '') {
             return '<h3>Event data is not set</h3>';
         }

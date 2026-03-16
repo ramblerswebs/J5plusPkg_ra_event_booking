@@ -45,11 +45,13 @@ class HtmlView extends BaseHtmlView {
         $ewid = $input->getString('id', 0);
         $md5Email = $input->getString('cancel', 0);
         $ebRecord = helper::getEVBrecord($ewid, "Internal");
-        $placesBefore = $ebRecord->noOfPlaces();
         if ($ebRecord === null) {
             echo '<h3>Sorry we could not find this event</h3>';
             return;
         }
+        $placesBefore = $ebRecord->noOfPlaces();
+
+        $currentBooking = $ebRecord->blc->getItemByMd5Email($md5Email);
         $ok = $ebRecord->removeBooking($md5Email);
         if (!$ok) {
             echo '<h3>Sorry we could not find your booking, it has not been cancelled</h3>';
@@ -57,18 +59,42 @@ class HtmlView extends BaseHtmlView {
         }
         $ebRecord->updateDatabase('Booking');
         echo '<h3>Your booking for this event has been cancelled</h3>';
+
+        // send user and booking contacts email
+        $this->emailUser($ebRecord, $currentBooking);
+
         // do we need to notify waiting list
         if ($placesBefore === 0) {
-            $to = $ebRecord->wlc->getArray();
-            $replyTo = $ebRecord->getEventContact();
-            $title = $ebRecord->getEmailTitle('PLACES');
-            $noOfPlaces = $ebRecord->noOfPlaces();
-            if ($noOfPlaces < 1) {
-                throw new \RuntimeException('Email to waiting list: no places available');
-            }
-            $content = helper::getEmailTemplate('notifylistemail.html', $ebRecord);
-
-            helper::sendEmailsToUser($to, null, $replyTo, $title, $content);
+            $this->notifyWaitingList($ebRecord);
         }
+    }
+
+    private function notifyWaitingList($ebRecord) {
+        $to = $ebRecord->wlc->getArray($ebRecord);
+        $replyTo = $ebRecord->getEventContact();
+        $title = $ebRecord->getEmailTitle('PLACES');
+        $noOfPlaces = $ebRecord->noOfPlaces();
+        if ($noOfPlaces < 1) {
+            throw new \RuntimeException('Email to waiting list: no places available');
+        }
+        $content = helper::getEmailTemplate('notifylistemail.html', $ebRecord);
+
+        helper::sendEmailsToUser($to, null, $replyTo, $title, $content);
+    }
+
+    private function emailUser($ebRecord, $currentBooking) {
+        // send user and booking contacts email
+        $emailTemplate = 'removebooking.html';
+        $attach = null;
+        $to[] = $currentBooking;
+        $replyTo = $ebRecord->getEventContact();
+        $copyTo = null;
+        if ($ebRecord->options->email_booking === 'individual') {
+            $copyTo = helper::getEventContacts($ebRecord);
+        }
+        $title = $ebRecord->getEmailTitle('CANCEL');
+        $content = helper::getEmailTemplate($emailTemplate, $ebRecord);
+        helper::sendEmailsToUser($to, $copyTo, $replyTo, $title, $content, $attach);
+        helper::sendBookingListUpdate($ebRecord);
     }
 }

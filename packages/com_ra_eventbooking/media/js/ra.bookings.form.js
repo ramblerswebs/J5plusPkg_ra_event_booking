@@ -25,7 +25,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
     this.ewid = ewid;
     this.ew = ew;
     this.ics = ics;
-   this.eventTitle = ra.date.dowddmmyyyy(ew.basics.walkDate) + ' ' + ew.basics.title;
+    this.eventTitle = ra.date.dowddmmyyyy(ew.basics.walkDate) + ' ' + ew.basics.title;
     this.evb = evb;
     this.elements = null;
     this.verification = {md5: '',
@@ -37,7 +37,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         confirmEmail: '',
         telephone: '',
         md5Email: '',
-        member: '?',
+        member: 'No',
         paid: '',
         currentAttendees: 0};
     this.input = new ra.bookings.inputFields;
@@ -48,9 +48,9 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         NONE: 3,
         WAITING: 4
     });
-    this.display = function (tag) {
-        this.tag = tag;
-        this.tag.innerHTML = '';
+    this.display = function () {
+        // this.tag;
+        //   this.tag.innerHTML = '';
         var tags = [
             {name: 'container', parent: 'root', tag: 'div', attrs: {class: 'ra bookings form'}},
             {name: 'event', parent: 'container', tag: 'div', attrs: {class: 'bookingitem'}},
@@ -61,7 +61,10 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             //  {name: 'status', parent: 'userDetails', tag: 'div'},
             {name: 'bookplace', parent: 'userDetails', tag: 'div'}
         ];
-        this.elements = ra.html.generateTags(tag, tags);
+        this.tag = document.createElement("div");
+        this.tag.style.display = "inline-block";
+        this.formModal = ra.modals.createModal(this.tag, false);
+        this.elements = ra.html.generateTags(this.tag, tags);
         this.displayEvent(this.elements.eventDetails);
         var self = this;
         this.tag.addEventListener('userDetailsVerified', (e) => {
@@ -105,6 +108,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
     this.refreshDisplay = function () {
         let event = new Event("bookingInfoChanged"); // 
         document.dispatchEvent(event);
+        this.formModal.close();
     };
     this.displayEvent = function (tag) {
         ra.bookings.addTextTag(tag, 'h3', ra.date.dowddmmyyyy(ew.basics.walkDate));
@@ -115,7 +119,6 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
     };
     this.getUser = function (tag) {
         var memOptions = {
-            '?': "Don't know",
             'Yes': "Yes - I am a member",
             'No': 'No - I have not joined yet'
         };
@@ -123,7 +126,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             this.bookingData.id = this.user.id;
             this.bookingData.name = this.user.name;
             this.bookingData.md5Email = this.user.md5Email;
-            this.bookingData.member = '~~~';
+            this.bookingData.member = 'Yes';
             ra.bookings.addTextTag(tag, 'h3', 'Welcome ' + this.user.name);
             let event = new Event("userDetailsVerified"); // 
             this.tag.dispatchEvent(event);
@@ -390,6 +393,13 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
                 if (this.evb.canDisplayWaitingList(this.user)) {
                     this.evb.listWaiting(tag, this.user);
                 }
+                if (this.user.canEdit) {
+                    var email = document.createElement("div");
+                    email.innerHTML = "<i>Email booking list/waiting list to me&nbsp;&nbsp;</i>";
+                    email.style.color = '#8A2716';
+                    tag.appendChild(email);
+                    ra.bookings.displayEmailIcon(email, "Email booking list to me", tag, "AdminEmailBookingList");
+                }
         }
     };
     this.getStatus = function () {
@@ -489,9 +499,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             if (select !== null) {
                 var submit = this.input.addButton(container, ['link-button', 'tiny', 'button', 'mintcake'], 'Submit');
                 submit.addEventListener('click', (e) => {
-                    if (self.bookingData.currentAttendees !== this.bookingData.attendees) {
-                        self.submitBooking();
-                    }
+                    self.submitBooking();
                 });
             }
         } else {
@@ -509,7 +517,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         if (waitingItem !== null) {
             displayWaitingList = true;
         }
-        if (displayWaitingList) {
+        if (displayWaitingList && maxPlaces !==0) {
             this.displayWaitingListOptions(tag);
         }
     }
@@ -524,6 +532,17 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         var action = 'SubmitBooking';
         if (this.bookingData.attendees === 0) {
             action = 'CancelBooking';
+        } else {
+            if (this.evb.options.attendeetype === 'memonly') {
+                if (this.bookingData.member !== 'Yes') {
+                    ra.showMsg('This event is only open to Ramblers Members');
+                    return;
+                }
+            }
+            if (this.evb.options.attendeetype === 'undefined') {
+                ra.showMsg('You have not specified if you are an Rambler Member or not');
+                return;
+            }
         }
         var sa = new ra.bookings.queryServer(this, action);
         sa.action(data, (self, results) => {
@@ -536,7 +555,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         }
         var waitingItem = this.evb.getWaiting(this.bookingData.md5Email);
         if (waitingItem === null) {
-            ra.bookings.addTextTag(tag, "p", "If you wish to be notified if a place becomes available, please use the <b>Notify</b> Me option below.");
+            ra.bookings.addTextTag(tag, "p", "If you wish to be notified when a place becomes available, please use the <b>Notify Me</b> option below.");
             var submit = this.input.addButton(tag, ['link-button', 'tiny', 'button', 'mintcake'], 'Notify Me');
             var self = this;
             submit.addEventListener('click', (e) => {

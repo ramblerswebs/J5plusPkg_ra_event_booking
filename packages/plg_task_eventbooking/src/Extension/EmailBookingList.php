@@ -50,6 +50,7 @@ final class EmailBookingList extends CMSPlugin implements SubscriberInterface {
      * @since 5.0.0
      */
     protected $autoloadLanguage = true;
+    private $debug = true;
 
     /**
      * @inheritDoc
@@ -76,17 +77,37 @@ final class EmailBookingList extends CMSPlugin implements SubscriberInterface {
      */
     private function emailBookingList(ExecuteTaskEvent $event): int {
         $this->logTask('Start of email booking list');
-
         try {
-            helper::emailBookingListOnClosed();
+            $this->emailBookingListOnClosed();
         } catch (\RuntimeException) {
             // Ignore it
+            $this->logTask('Email booking list FAILED');
             return Status::KNOCKOUT;
         }
-
-
         $this->logTask('End of email booking list');
 
         return Status::OK;
+    }
+
+    private function emailBookingListOnClosed() {
+
+        $events = helper::getAllEVBRecords();
+        foreach ($events as $event) {
+            if ($this->debug) {
+                $this->logTask('Debug: event ' . $event->event_id);
+            }
+            if ($event->options->send_booking_list_onclosed) {
+                $this->logTask('  Debug: send booking list on closed is on ' . $event->event_id);
+                if ($event->isBookingClosed()) {
+                    $this->logTask('   Debug: event booking closed: ' . $event->event_id);
+                    helper::sendEmailBookingOnClosed($event);
+                    $this->logTask('     Debug: email sent: ' . $event->event_id);
+                    helper::resetEmailOnClosed($event);
+
+                    $this->logTask('Email sent for event ' . $event->event_id);
+                }
+            }
+        }
+        return;
     }
 }

@@ -123,6 +123,33 @@
                label="COM_RA_EVENTBOOKING_FORM_LBL_GROUP_CONTACT" 
                description="COM_RA_EVENTBOOKING_FORM_DESC_GROUP_CONTACT" 
         />
+        <field name="email_booking" 
+               type="list" 
+               default="individual" 
+               label="Booking notifications" 
+               description="Send info to booking contact when booking/waiting list changes" 
+        >
+            <option value="none">No notifications</option>
+            <option value="individual">Send copy of booking change emails</option>
+            <option value="list">Send booking list email after each change</option>
+        </field>
+        <field name="notrecommended" 
+                 type="note" 
+                 label="Not recommended" 
+                 showon="email_booking:list"
+                 description="This option is not production ready, it currently takes a long time to send the emails" 
+                 class="alert alert-info" />
+        <field name="email_waiting" 
+               showon="email_booking:individual,list"
+               type="list" 
+               default="0" 
+               label="Which changes" 
+               description="Include waiting list changes as well as booking changes " 
+        >
+            <option value="0">Booking changes</option>
+            <option value="1">Booking and waiting list changes</option>
+        </field>
+       
         <field name="email_format" 
                type="text" 
                label="COM_RA_EVENTBOOKING_FORM_LBL_GROUP_EMAIL_FORMAT" 
@@ -169,7 +196,8 @@
                default="NOW" 
                label="Set Closing date" 
                description="This is when the bookings for events will end" 
-               format="%d-%m-%Y %H:%M" />
+               format="%Y-%m-%d %H:%M:%S"
+        />
 
         <field name="send_booking_list_onclosed" 
                type="list" 

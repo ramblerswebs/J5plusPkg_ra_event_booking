@@ -43,12 +43,9 @@ class BookingcontactField extends FormField {
             throw new \RuntimeException('Default Booking Contact not set, set default Options');
         }
         $juser = Factory::getUser($id);
-        $user = (object) ['name' => $juser->name,
-                    'email' => $juser->email];
         $options = $this->getOptions();
         $html = '<select class="form-select" name="' . $this->name . '" value="' . $this->value . '" >';
-
-        $html .= '<option value="0">Not required</option>';
+        $html .= '<option value="">Use global [' . $juser->name . ']</option>';
         foreach ($options as $option) {
             if ($this->value === strval($option->value)) {
                 $html .= '<option value = "' . $option->value . '" selected = "selected">' . $option->text . '</option>';

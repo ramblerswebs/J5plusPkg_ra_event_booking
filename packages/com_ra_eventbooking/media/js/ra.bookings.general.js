@@ -328,7 +328,7 @@ ra.bookings.inputFields = function () {
         _label.setAttribute('class', 'booking label');
         _label.textContent = label;
         var inputTag = document.createElement('select');
-        var no;
+        var no = 0;
         for (var key in values) {
             no += 1;
         }
@@ -463,8 +463,8 @@ ra.bookings.user = function (user) {
 };
 ra.bookings.defaults = function (defaults) {
     this.attendeetype = defaults.attendeetype;
+    this.booking_contact_id = defaults.booking_contact_id;
     this.booking_contact_name = defaults.booking_contact_name;
-    this.booking_contact_email = defaults.booking_contact_email;
     this.closingoption = defaults.closingoption;
     this.customclosingdate = defaults.customclosingdate;
     this.guest = defaults.guest;
@@ -501,7 +501,7 @@ ra.bookings.defaults = function (defaults) {
         }
         switch (this.attendeetype) {
             case 'public':
-                elements.type.innerHTML = 'Events ar open to the public';
+                elements.type.innerHTML = 'Events are open to the public';
                 break;
             case 'memonly':
                 elements.type.innerHTML = 'Events are only for Ramblers members';
@@ -571,7 +571,7 @@ ra.bookings.defaults = function (defaults) {
     this.overrides = function (options) {
         var out = [];
 
-        if (this.booking_contact_name !== options.booking_contact_name) {
+        if (this.booking_contact_id !== options.booking_contact_id) {
             out[out.length] = 'Booking contact ' + options.booking_contact_name;
         }
         if (this.attendeetype !== options.attendeetype) {
@@ -718,14 +718,18 @@ ra.bookings.evb = function (value) {
             disable.addEventListener("click", function (e) {
                 var data = {
                     ewid: e.currentTarget.getAttribute('data-eventid')};
-                ra.bookings.serverAction(self, 'DisableEvent', data, self._BookingDisableResult);
+                var sa = new ra.bookings.queryServer(self, 'DisableEvent');
+                sa.action(data, (self, results) => {
+                    self._BookingDisableResult(results);
+                });
             });
+
         } else {
             table.tableRowItem('');
         }
         table.tableRowEnd();
     };
-    this._BookingDisableResult = function (self, results) {
+    this._BookingDisableResult = function (results) {
         if (results.status !== 200) {
             ra.showMsg('Unable to disable event/booking record');
             return;
@@ -785,18 +789,32 @@ ra.bookings.evb = function (value) {
         } else {
             ra.bookings.addTextTag(tag, 'div', "No payment required");
         }
+        if (this.bookingClosed()) {
+            return;
+        }
         if (this.options.total_places === 0) {
             ra.bookings.addTextTag(tag, 'div', "Unlimited number of places");
         } else {
             ra.bookings.addTextTag(tag, 'div', "Total number of places available: " + this.options.total_places);
         }
+        if (this.options.attendeetype === 'memonly') {
+            ra.bookings.addTextTag(tag, 'div', "<b>This event is for MEMBERS ONLY</b>");
+        } else {
+            ra.bookings.addTextTag(tag, 'div', "Event is open to general public ");
+        }
+
+
         var no = this.noAttendees();
         switch (no) {
             case 0:
                 ra.bookings.addTextTag(tag, 'div', "There are no bookings so far");
                 break;
             case this.options.total_places:
-                ra.bookings.addTextTag(tag, 'div', "This event if fully booked");
+                if (this.options.waitinglist) {
+                    ra.bookings.addTextTag(tag, 'div', "<b>This event is FULLY BOOKED</b> but you can join the waiting list.");
+                } else {
+                    ra.bookings.addTextTag(tag, 'div', "<b>This event is FULLY BOOKED</b>");
+                }
                 break;
             default:
                 ra.bookings.addTextTag(tag, 'div', "There are currently " + no + " place(s) booked.");
@@ -972,7 +990,13 @@ ra.bookings.blc = function () {
             }
         }
         format[1].ignore = !options.guest;
-
+        if (options.canEdit) {
+            var emailallc = document.createElement("div");
+            emailallc.innerHTML = "Email all those who have booked&nbsp;&nbsp;";
+            emailallc.style.color = '#8A2716';
+            elements.list.appendChild(emailallc);
+            ra.bookings.displayEmailIcon(emailallc, "Email all those who have booked", tag, "AdminEmailAllBooking");
+        }
         var table = new ra.paginatedTable(elements.list);
         table.tableHeading(format);
         this.items.forEach(item => {
@@ -980,64 +1004,10 @@ ra.bookings.blc = function () {
         });
         table.tableEnd();
 
-        if (options.canEdit) {
-            var emailallc = document.createElement("div");
-            emailallc.innerHTML = "Email all those who have booked&nbsp;&nbsp;";
-            emailallc.style.color = '#8A2716';
-            elements.list.appendChild(emailallc);
-            ra.bookings.displayEmailIcon(emailallc, "Email all those who have booked", tag, "AdminEmailAllBooking");
-            var email = document.createElement("div");
-            email.innerHTML = "Email above booking list to me&nbsp;&nbsp;";
-            email.style.color = '#8A2716';
-            elements.list.appendChild(email);
-            ra.bookings.displayEmailIcon(email, "Email above booking list to me", tag, "AdminEmailBookingList");
-        }
+
     };
-//    this.listOLD = function (tag, options) {
-//        if (this.items.length === 0) {
-////            var c = document.createElement("p");
-////            c.innerHTML = 'There are no bookings ';
-////            tag.appendChild(c);
-//            return;
-//        }
-//        var tags = [
-//            {name: 'base', parent: 'root', tag: 'details'},
-//            {name: 'button', parent: 'base', tag: 'summary', attrs: {class: 'link-button tiny button mintcake'}, innerHTML: 'Bookings so far'},
-//            {name: 'list', parent: 'base', tag: 'div', style: {clear: 'both'}}
-//        ];
-//        var elements = ra.html.generateTags(tag, tags);
-//        var table = document.createElement("table");
-//        elements.list.appendChild(table);
-//        var cols = [];
-//        cols.push("Name");
-//        if (options.guest) {
-//            cols.push("Status");
-//        }
-//        cols.push("Places");
-//        if (options.canEdit) {
-//            cols.push("Member");
-//            cols.push("Telephone");
-//            if (options.displayPaid) {
-//                cols.push("Paid");
-//            }
-//            cols.push("Actions");
-//        }
-//        ra.html.addTableRow(table, cols, 'th');
-//        this.items.forEach(item => {
-//            item.list(tag, table, options);
-//        });
-//        if (options.canEdit) {
-//            var emailallc = document.createElement("div");
-//            emailallc.innerHTML = "Email all those who have booked&nbsp;&nbsp;";
-//            elements.list.appendChild(emailallc);
-//            ra.bookings.displayEmailIcon(emailallc, "Email all those who have booked", tag, "AdminEmailAllBooking");
-//            var email = document.createElement("div");
-//            email.innerHTML = "Email above booking list to me&nbsp;&nbsp;";
-//            elements.list.appendChild(email);
-//            ra.bookings.displayEmailIcon(email, "Email above booking list to me", tag, "AdminEmailBookingList");
-//        }
-//    };
 };
+
 // Booking list item
 ra.bookings.bli = function (value) {
     this.id = value.id;
@@ -1075,31 +1045,7 @@ ra.bookings.bli = function (value) {
 
         table.tableRowEnd();
     };
-//    this.listOLD = function (eventTag, tag, options) {
-//        var cols = [];
-//        cols.push(this.name);
-//        if (options.guest) {
-//            if (this.id > 0) {
-//                cols.push("Registered");
-//            } else {
-//                cols.push("Guest");
-//            }
-//        }
-//        cols.push(this.attendees);
-//        if (options.canEdit) {
-//            cols.push(this.member);
-//            cols.push(this.telephone);
-//            if (options.displayPaid) {
-//                cols.push(this.getPaid(options, eventTag, this));
-//            }
-//            var self = this;
-//            var span = document.createElement("span");
-//            ra.bookings.displayDeleteIcon(span, "Delete this booking", eventTag, "deleteBooker", {user: self});
-//            ra.bookings.displayEmailIcon(span, "Email this user", eventTag, "emailSingleBooker", {user: self});
-//            cols.push(span);
-//        }
-//        ra.html.addTableRow(tag, cols);
-//    };
+
     this.getPaid = function (options, eventTag, user) {
         var span = document.createElement("span");
         span.classList.add('ra', 'bookings', 'paid');
@@ -1147,29 +1093,35 @@ ra.bookings.wlc = function () {
             {name: 'button', parent: 'base', tag: 'summary', attrs: {class: 'link-button tiny button mintcake'}, innerHTML: 'Notify me list'},
             {name: 'list', parent: 'base', tag: 'div', style: {clear: 'both'}}
         ];
+        var format = [{"title": "Name", "options": {align: "left"}, field: {type: 'text', filter: false, sort: false}},
+            {"title": "Status", "options": {align: "left"}},
+            {"title": "Action", "options": {align: "right", "style": {"min-width": "60px", "color": "#8A2716"}}}];
+
         var elements = ra.html.generateTags(tag, tags);
+
         if (options.canEdit) {
             var emailallc = document.createElement("span");
-            emailallc.innerHTML = "Email all those on list";
+            emailallc.innerHTML = "Email all those on waiting list";
+            emailallc.style.color = '#8A2716';
             emailallc.style.paddingRight = "10px";
             elements.list.appendChild(emailallc);
             ra.bookings.displayEmailIcon(elements.list, "Email all those on list", tag, "AdminEmailAllWaiting");
         }
-        var table = document.createElement("table");
-        elements.list.appendChild(table);
-        var cols = [];
-        cols.push("Name");
-        if (options.guest) {
-            cols.push("Status");
+
+        if (!options.canEdit) {
+            format[1].ignore = true;
+            format[2].ignore = true;
         }
-        if (options.canEdit) {
-            cols.push("Actions");
-        }
-        ra.html.addTableRow(table, cols, 'th');
+
+        var table = new ra.paginatedTable(elements.list);
+        table.tableHeading(format);
         this.items.forEach(item => {
-            item.list(tag, table, options);
+            item.list(tag, table, format);
         });
+        table.tableEnd();
+
     };
+
 };
 // Waiting list item
 ra.bookings.wli = function (value) {
@@ -1179,25 +1131,25 @@ ra.bookings.wli = function (value) {
     this.isPresent = function (md5Email) {
         return md5Email === this.md5Email;
     };
-    this.list = function (eventTag, tag, options) {
-        var item = document.createElement("tr");
-        tag.appendChild(item);
-        var cols = [];
-        cols.push(this.name);
-        if (options.guest) {
-            if (this.id > 0) {
-                cols.push("Registered");
-            } else {
-                cols.push("Guest");
-            }
+    this.list = function (eventTag, table, format) {
+
+
+        table.tableRowStart();
+        table.tableRowItem(this.name, format[0]);
+        if (this.id > 0) {
+            table.tableRowItem("Registered", format[1]);
+        } else {
+            table.tableRowItem("Guest", format[1]);
         }
-        if (options.canEdit) {
-            var self = this;
-            var span = document.createElement("span");
-            ra.bookings.displayDeleteIcon(span, "Delete from list", eventTag, "deleteWaiting", {user: self});
-            ra.bookings.displayEmailIcon(span, "Email this user", eventTag, "AdminEmailSingleWaiting", {user: self});
-            cols.push(span);
-        }
-        ra.html.addTableRow(tag, cols);
+
+        var self = this;
+        var span = document.createElement("span");
+        ra.bookings.displayDeleteIcon(span, "Delete this booking", eventTag, "deleteBooker", {user: self});
+        ra.bookings.displayEmailIcon(span, "Email this user", eventTag, "emailSingleBooker", {user: self});
+        table.tableRowItem(span, format[2]);
+
+        table.tableRowEnd();
+
     };
+
 };

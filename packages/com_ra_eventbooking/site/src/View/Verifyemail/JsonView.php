@@ -43,9 +43,9 @@ class JsonView extends BaseJsonView {
             $user = $data->user;
             $name = $user->name;
             $email = $user->email;
-            $ewid=$data->ewid;
+            $ewid = $data->ewid;
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
-          
+
             $code = self::generateCode();
 
             $feedback[] = '<h3>Verification email sent</h3>';
@@ -58,7 +58,7 @@ class JsonView extends BaseJsonView {
             $replyTo->name = 'NO-REPLY';
             $replyTo->email = 'no-reply@ramblers-webs.org.uk';
 
-            $title = 'Verify your email address';
+            $title = 'Verify your email address - ' . $code;
             $content = helper::getEmailTemplate($emailTemplate, $ebRecord);
             $content = str_replace("{verifyCode}", $code, $content);
 

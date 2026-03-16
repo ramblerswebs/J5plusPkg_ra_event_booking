@@ -61,10 +61,20 @@ class JsonView extends BaseJsonView {
             $ebRecord->updateDatabase('Waiting');
             $to = [$item];
             $replyTo = $ebRecord->getEventContact();
+            if ($ebRecord->options->email_booking === 'individual') {
+                if ($ebRecord->options->email_waiting) {
+                    $copyTo = helper::getEventContacts($ebRecord);
+                }
+            }
             $copyTo = null;
             $title = $ebRecord->getEmailTitle('NOTIFY');
             $content = helper::getEmailTemplate($emailTemplate, $ebRecord);
             helper::sendEmailsToUser($to, $copyTo, $replyTo, $title, $content);
+            if ($ebRecord->options->email_booking === 'list') {
+                if ($ebRecord->options->email_waiting) {
+                    helper::sendBookingListUpdate($ebRecord, 'WAITING CHANGE');
+                }
+            }
             $record = (object) [
                         'feedback' => $feedback
             ];

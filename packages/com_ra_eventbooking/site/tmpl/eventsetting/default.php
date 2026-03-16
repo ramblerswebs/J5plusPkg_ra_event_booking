@@ -102,9 +102,8 @@ if (!$canEdit && Factory::getApplication()->getIdentity()->authorise('core.edit.
 
     </table>
     <?php
-  //  $ebRecord = helper::convertEvent($this->item);
-    $ebRecord = helper::getEVB($this->item,'Internal');
-    echo $ebRecord->getBookingTable();
+    $ebRecord = helper::getEVB($this->item, 'Internal');
+    echo $ebRecord->displayBookingTable();
     ?>
 
 </div>

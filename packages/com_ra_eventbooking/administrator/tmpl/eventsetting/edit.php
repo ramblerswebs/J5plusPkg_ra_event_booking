@@ -56,6 +56,10 @@ HTMLHelper::_('bootstrap.tooltip');
         echo HTMLHelper::_('uitab.endTab');
         echo HTMLHelper::_('uitab.addTab', 'myTab', 'comms', Text::_('Comms'));
         echo $this->form->renderField('booking_contact_id', 'params');
+        echo $this->form->renderField('email_booking', 'params');
+        echo $this->form->renderField('notrecommended', 'params');
+        echo $this->form->renderField('email_waiting', 'params');
+        echo $this->form->renderField('send_both_contacts', 'params');
 
         echo $this->form->renderField('email_format', 'params');
         echo $this->form->renderField('customsignature', 'params');
@@ -67,16 +71,6 @@ HTMLHelper::_('bootstrap.tooltip');
         echo $this->form->renderField('walk_leader_id', 'params');
 
         echo HTMLHelper::_('uitab.endTab');
-
-//                echo HTMLHelper::_('uitab.addTab', 'myTab', 'event', Text::_('Event Details'));
-//                $ebRecord = helper::getEVB($this->item, 'Internal');
-//                if ($ebRecord !== null) {
-//                    echo $ebRecord->getEventData();
-//                    echo $ebRecord->getBookingTable();
-//                } else {
-//                    echo '<h3>Event data not available</h3>';
-//                }
-//                echo HTMLHelper::_('uitab.endTab');
 
         echo HTMLHelper::_('uitab.endTabSet');
         ?>

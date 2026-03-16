@@ -50,8 +50,6 @@ class BookingcontactField extends FormField {
         }
 
         $juser = Factory::getUser($id);
-        $user = (object) ['name' => $juser->name,
-                    'email' => $juser->email];
         $options = $this->getOptions();
         $html = '<select class="form-select" name="' . $this->name . '" value="' . $this->value . '" >';
         if (!$this->configMode) {
