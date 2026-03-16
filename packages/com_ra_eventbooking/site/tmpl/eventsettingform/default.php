@@ -30,7 +30,7 @@ $user = Factory::getApplication()->getIdentity();
 $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
 ?>
 
-<div class="eventsetting-edit front-end-edit" style="max-width:600px;">
+<div class="eventsetting-edit front-end-edit" >
 
     <?php if ($this->params->get('show_page_heading')) : ?>
         <div class="page-header">
