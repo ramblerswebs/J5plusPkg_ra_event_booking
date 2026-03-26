@@ -3,12 +3,12 @@
 	<name>plg_task_eventbooking</name>
         <folder>task</folder>
 	<author>Chris Vaughan</author>
-	<creationDate>02-03-2026</creationDate>
+	<creationDate>26-03-2026</creationDate>
 	<copyright>(C) 2026 Open Source Matters, Inc.</copyright>
 	<license>GNU General Public License version 2 or later; see LICENSE.txt</license>
 	<authorEmail>ruby.tuesday@ramblers-webs.org.uk</authorEmail>
 	<authorUrl>www.ramblers-webs.org.uk</authorUrl>
-	<version>0.0.1</version>
+	<version>1.0.2</version>
 	<description><![CDATA[Event Booking: task to email booking list once booking closed]]></description>
 	<namespace path="src">Ramblers\Plugin\Task\EventBooking</namespace>
 	<files>

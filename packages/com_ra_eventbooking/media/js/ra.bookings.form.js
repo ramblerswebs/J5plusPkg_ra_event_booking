@@ -387,13 +387,9 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             case BookingStatus.WAITING:
             case BookingStatus.BOOKED:
             case BookingStatus.NONE:
-                if (this.evb.canDisplayBookingList(this.user)) {
-                    this.evb.listAttendees(tag, this.user);
-                }
-                if (this.evb.canDisplayWaitingList(this.user)) {
-                    this.evb.listWaiting(tag, this.user);
-                }
-                if (this.user.canEdit) {
+                this.evb.listAttendees(tag, this.user);
+                this.evb.listWaiting(tag, this.user);
+                if (this.user.canEdit && this.evb.noAttendees() > 0) {
                     var email = document.createElement("div");
                     email.innerHTML = "<i>Email booking list/waiting list to me&nbsp;&nbsp;</i>";
                     email.style.color = '#8A2716';
@@ -517,7 +513,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         if (waitingItem !== null) {
             displayWaitingList = true;
         }
-        if (displayWaitingList && maxPlaces !==0) {
+        if (displayWaitingList && maxPlaces !== 0) {
             this.displayWaitingListOptions(tag);
         }
     }

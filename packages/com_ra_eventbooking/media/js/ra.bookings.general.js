@@ -767,17 +767,22 @@ ra.bookings.evb = function (value) {
         return no >= this.options.total_places && this.options.total_places !== 0;
     };
     this.listAttendees = function (tag, user) {
-        var options = {
-            guest: this.options.guest,
-            canEdit: user.canEdit,
-            displayPaid: this.options.payment_required && user.canEdit};
-        this.blc.list(tag, options);
+        if (this.canDisplayBookingList(user)) {
+            var options = {
+                guest: this.options.guest,
+                canEdit: user.canEdit,
+                displayPaid: this.options.payment_required && user.canEdit};
+            this.blc.list(tag, options);
+        }
     };
     this.listWaiting = function (tag, user) {
-        var options = {
-            guest: this.options.guest,
-            canEdit: user.canEdit};
-        this.wlc.list(tag, options);
+        if (this.canDisplayWaitingList) {
+            var options = {
+                guest: this.options.guest,
+                canEdit: user.canEdit};
+            this.wlc.list(tag, options);
+        }
+
     };
     this.displayBookingStatus = function (tag, user) {
 

@@ -50,7 +50,7 @@ final class EmailBookingList extends CMSPlugin implements SubscriberInterface {
      * @since 5.0.0
      */
     protected $autoloadLanguage = true;
-    private $debug = true;
+    private $debug = false;
 
     /**
      * @inheritDoc

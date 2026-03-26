@@ -551,6 +551,9 @@ class evb {
         }
 
         $this->event_id = $value->event_id;
+        if ($this->event_id === null) {
+            throw new \RuntimeException('Invalid EVB information [null event id]');
+        }
 
         $this->blc = new blc();
         $this->blc->process($value->booking_data, $mode);

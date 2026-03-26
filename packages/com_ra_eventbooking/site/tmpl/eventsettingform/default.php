@@ -43,7 +43,7 @@ $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
         </h3>
     <?php else : ?>
         <?php if (!empty($this->item->id)): ?>
-            <h1><?php // echo Text::sprintf('COM_RA_EVENTBOOKING_EDIT_ITEM_TITLE', $this->item->id);                     ?></h1>
+            <h1><?php // echo Text::sprintf('COM_RA_EVENTBOOKING_EDIT_ITEM_TITLE', $this->item->id);  ?></h1>
         <?php else: ?>
             <h1><?php echo Text::_('COM_RA_EVENTBOOKING_ADD_ITEM_TITLE'); ?></h1>
         <?php endif; ?>
@@ -101,8 +101,8 @@ $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
                 echo HTMLHelper::_('uitab.endTab');
 
                 echo HTMLHelper::_('uitab.addTab', 'myTab', 'event', Text::_('Event Details'));
-                $ebRecord = helper::getEVB($this->item, 'Internal');
-                if ($ebRecord !== null) {
+                if ($this->item->event_id !== null) {
+                    $ebRecord = helper::getEVB($this->item, 'Internal');
                     echo $ebRecord->displayEventData();
                     echo $ebRecord->displayBookingTable();
                     echo $ebRecord->displayWaitingTable();
