@@ -25,8 +25,10 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Uri\Uri;
 //use \Joomla\CMS\MVC\Model\BaseDatabaseModel;
 use Joomla\CMS\Component\ComponentHelper;
-use Joomla\CMS\Mail\MailerFactoryInterface;
 use Joomla\CMS\Table\Extension;
+use Joomla\CMS\Mail\MailTemplate;
+use Joomla\CMS\Mail\MailerFactoryInterface;
+use Ramblers\Component\Ra_eventbooking\Site\Helper\Ra_eventbookingHelper as helper;
 
 /**
  * Class Ra_eventbookingFrontendHelper
@@ -34,6 +36,10 @@ use Joomla\CMS\Table\Extension;
  * @since  1.0.0
  */
 class Ra_eventbookingHelper {
+
+    // path of attachments
+    private static $attachmentFile = null;
+    private static $currentURL = null;
 
     /**
      * Gets the files attached to an item
@@ -117,6 +123,7 @@ class Ra_eventbookingHelper {
         if (\json_last_error() !== JSON_ERROR_NONE) {
             throw new \RuntimeException('Invalid JSON data received.');
         }
+        self::$currentURL = $data->currentURL;
         return $data;
     }
 
@@ -143,7 +150,7 @@ class Ra_eventbookingHelper {
     }
 
     public static function getEVB($data, $mode) {
-        return new evb(self::class, $data, $mode);
+        return new evb($data, $mode);
     }
 
     public static function getEVBrecord($ewid, $mode) {
@@ -160,7 +167,7 @@ class Ra_eventbookingHelper {
         $db->setQuery($query);
         $result = $db->loadObject();
         if ($result !== null) {
-            return new evb(self::class, $result, $mode);
+            return new evb($result, $mode);
         }
         return null;
     }
@@ -177,7 +184,7 @@ class Ra_eventbookingHelper {
         $rows = $db->loadObjectList();
         $items = [];
         foreach ($rows as $row) {
-            $item = new evb(self::class, $row, 'Summary');
+            $item = new evb($row, 'Summary');
             array_push($items, $item);
         }
         return $items;
@@ -224,80 +231,59 @@ class Ra_eventbookingHelper {
         }
     }
 
-    public static function sendBookingChangeEmail($evb, $md5Email, $cancel) {
+//    public static function sendBookingChangeEmail($evb, $md5Email, $cancel) {
+//
+//        $mailTemplate = 'remove_booking';
+//        $attach = null;
+//        $currentBooking = $evb->blc->getItemByMd5Email($md5Email);
+//
+//        // send email confirmation
+//        $to[] = $currentBooking;
+//        $replyTo = $evb->getEventContact();
+//        $copyTo = null;
+//        if ($evb->options->email_booking === 'individual') {
+//            $copyTo = $evb->getEventContacts();
+//        }
+//
+//        $fields = helper::getAllEmailFields($evb, $md5Email);
+//        helper::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields, $attach);
+//        helper::sendBookingListUpdate($evb);
+//    }
 
-        $emailTemplate = 'removebooking.html';
-        $action = 'CANCEL';
-        $attach = null;
-        $currentBooking = $evb->blc->getItemByMd5Email($md5Email);
-
-        // send email confirmation
-        $to[] = $currentBooking;
-        $replyTo = $evb->getEventContact();
-        $copyTo = null;
-        if ($evb->options->email_booking === 'individual') {
-            $copyTo = helper::getEventContacts($evb);
+    public static function getAllEmailFields($evb, $md5Email = null) {
+        $ewid = $evb->event_id;
+        $fields = $evb->getEmailFields();
+        $app = Factory::getApplication();
+        $fields['SITENAME'] = $app->get('sitename');   // gets Global Configuration → Site Name
+        $fields['SITEURL'] = Uri::base(false);
+        if ($md5Email !== null) {
+            $fields['CANCELURL'] = $fields['SITEURL'] . '?option=com_ra_eventbooking&view=cancelbooking&id=' . $ewid . '&cancel=' . $md5Email;
+            $fields['CANCELBUTTON'] = "<a href='" . $fields['CANCELURL'] . "' style='border-radius: 5px; background-color:  #F08050; color: white;padding: 3px;margin:3px;'>CANCEL Booking</a>";
         }
-        $title = $evb->getEmailTitle($action);
-        $content = helper::getEmailTemplate($emailTemplate, $evb);
-        $cancelURL = $siteUrl . '?option=com_ra_eventbooking&view=cancelbooking&id=' . $ewid . '&cancel=' . md5($email);
-        $content = str_replace('{cancelUrl}', $cancelURL, $content);
-        helper::sendEmailsToUser($to, $copyTo, $replyTo, $title, $content, $attach);
-
-        helper::sendBookingListUpdate($evb);
+        $fields['LOCALPOPUPURL'] = self::$currentURL . '&walkid=' . $ewid;
+        $fields['VIEWBUTTON'] = "<a href='" . $fields['LOCALPOPUPURL'] . "' style='border-radius: 5px; background-color:  #9BC8AB; color: white;padding: 3px 3px;margin:3px;'>View Event</a>";
+        $fields['FOOTER'] = " <p><small>This email is an automated one sent from the web site:" . $fields['SITENAME'] . " on behalf of " . $fields['GROUPNAME'] . "<br>You are being sent this email as you have either booked places or you are on the waiting list for one of our events.</small></p>";
+        return $fields;
     }
 
     public static function sendBookingListUpdate($evb) {
         if ($evb->options->email_booking !== 'list') {
             return;
         }
-        $action = 'BOOKING CHANGE';
-        $to = self::getEventContacts($evb);
-        $copy = null;
+        $to = $evb->getEventContacts();
+        $copyTo = null;
         $replyTo = null;
         $bookinglist = $evb->blc->getBookingTable($evb->options->payment_required, true);
-
         $waitinglist = $evb->getWaitingTable(true);
-
-        $title = $evb->getEmailTitle($action);
-        $content = self::getEmailTemplate('emailbookinglist.html', $evb);
-        $content = str_replace("{bookinglist}", $bookinglist, $content);
-        $content = str_replace("{waitinglist}", $waitinglist, $content);
-        $content = str_replace("{reason}", "A booking or the waiting list entry has been updated", $content);
-        self::sendEmailsToUser($to, $copy, $replyTo, $title, $content);
+        $mailTemplate = 'email_booking_list';
+        $fields = helper::getAllEmailFields($evb);
+        $fields['BOOKINGLIST'] = $bookinglist;
+        $fields['WAITINGLIST'] = $waitinglist;
+        $fields['REASON'] = "A booking or the waiting list entry has been updated";
+        self::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields);
     }
 
-    public static function getEventContacts($evb, $includeWalkLeader = false) {
-        $emails = [];
-        $ec = $evb->getEventContact();
-        $emails[] = self::getSendTo($ec->name, $ec->email);
-        if ($evb->options->send_both_contacts) {
-            $gc = self::getGroupContact();
-            $emails[] = self::getSendTo($gc->name, $gc->email);
-        }
-        if ($includeWalkLeader) {
-            $wl = $evb->getWalkLeader();
-            if ($wl !== null) {
-                $emails[] = self::getSendTo($wl->name, $wl->email);
-            }
-        }
-        return self::uniqueByProperty($emails, 'email');
-    }
-
-    public static function sendEmailBookingOnClosed($evb) {
-        // sent to booking contacts     
-        $to = self::getEventContacts($evb, true);
-        $replyTo = null;
-        $title = $evb->getEmailTitle('BOOKING CLOSED');
-        $bookinglist = $evb->blc->getBookingTable($evb->options->payment_required, true);
-        $waitinglist = $evb->getWaitingTable(true);
-        $content = self::getEmailTemplate('emailbookinglistOnClosed.html', $evb);
-        $content = str_replace("{bookinglist}", $bookinglist, $content);
-        $content = str_replace("{waitinglist}", $waitinglist, $content);
-        self::sendEmailsToUser($to, null, $replyTo, $title, $content);
-    }
-
-    private static function uniqueByProperty(array $objects, string $property): array {
+    public static function uniqueByProperty(array $objects, string $property): array {
         $seen = [];
 
         return array_values(array_filter($objects, function ($obj) use (&$seen, $property) {
@@ -321,17 +307,17 @@ class Ra_eventbookingHelper {
         $event->updateDatabase('Params');
     }
 
-    public static function sendToWaitingList($ebRecord) {
-        $to = $ebRecord->wlc->getArray();
-        $replyTo = $ebRecord->getEventContact();
-        $title = $ebRecord->getEmailTitle('PLACES');
-        $noOfPlaces = $ebRecord->noOfPlaces();
+    public static function sendToWaitingList($evb) {
+        $to = $evb->wlc->getArray();
+        $replyTo = $evb->getEventContact();
+
+        $noOfPlaces = $evb->noOfPlaces();
         if ($noOfPlaces < 1) {
             throw new \RuntimeException('Email to waiting list: no places available');
         }
-        $content = helper::getEmailTemplate('notifylistemail.html', $ebRecord);
-
-        helper::sendEmailsToUser($to, null, $replyTo, $title, $content);
+        $mailTemplate = 'notify_list_email';
+        $fields = helper::getAllEmailFields($evb);
+        helper::sendEmailsToUser($to, null, $replyTo, $mailTemplate, $fields);
     }
 
     public static function getGroupContact() {
@@ -346,127 +332,146 @@ class Ra_eventbookingHelper {
         return $user;
     }
 
-    public static function sendEmailsToUser($sendToArray, $copy, $replyTo, $subject, $content, $attach = null) {
-        $config = Factory::getConfig();
-        $sender = array(
-            $config->get('mailfrom'),
-            $config->get('fromname')
-        );
+    public static function sendEmailsToUser($sendToArray, $copy, $replyTo, $template, $fields, $attach = null) {
 
-        $container = Factory::getContainer();
-        $mailer = $container->get(MailerFactoryInterface::class)->createMailer();
-//$mailer = Factory::getMailer();
-        $mailer->isHtml(true);
-        $mailer->Encoding = '8bit';
-        $mailer->setSender($sender);
-        if ($replyTo !== null) {
-            $mailer->addReplyTo($replyTo->email, $replyTo->name);
-        }
-        $mailer->setSubject($subject);
-        if ($attach !== null) {
-            if ($attach->type === 'string') {
-                self::addStringAttachment($mailer, $attach);
-            }
-        }
+        $mailer = Factory::getContainer()->get(MailerFactoryInterface::class)->createMailer();
+
+        // Load the administrator language file so mail template strings are available
+        $language = Factory::getApplication()->getLanguage();
+        $language->load('com_ra_eventbooking', JPATH_ADMINISTRATOR);
+
         foreach ($sendToArray as $sendTo) {
-            $mailer->clearAllRecipients();
-            $mailer->addRecipient($sendTo->email, $sendTo->name);
+            $mailer->ClearAllRecipients();
+            $fields["TONAME"] = $sendTo->name;
+            $fields["TOEMAIL"] = $sendTo->email;
+            if (method_exists($sendTo, 'noAttendees')) {
+                $fields["ATTENDEES"] = $sendTo->noAttendees();
+            } else {
+                $fields["ATTENDEES"] = '???';
+            }
+            if ($replyTo !== null) {
+                $fields["REPLYTONAME"] = $replyTo->name;
+            } else {
+                $fields["REPLYTONAME"] = 'Unknown';
+            }
+            // Create the mail template instance
+            $langTag = Factory::getApplication()->getLanguage()->getTag(); // returns e.g. 'en-GB'
+            $mailTemplate = new MailTemplate('com_ra_eventbooking.' . $template, $langTag, $mailer);
+            // Supply the tag values - keys must match the tags defined in your SQL params
+            $mailTemplate->addTemplateData($fields);
+
+            // Add the recipient/copy and replyto
+            $mailTemplate->addRecipient($sendTo->email, $sendTo->name);
             if ($copy !== null) {
                 if (is_array($copy)) {
                     foreach ($copy as $item) {
-                        $mailer->addCC($item->email, $item->name);
+                        $mailTemplate->addRecipient($item->email, $item->name, 'cc');
                     }
                 } else {
-                    $mailer->addCC($copy->email, $copy->name);
+                    $mailTemplate->addRecipient($copy->email, $copy->name, 'cc');
                 }
             }
-            $body = $content;
-            $body = str_replace("{toName}", $sendTo->name, $body);
-            $body = str_replace("{toEmail}", $sendTo->email, $body);
-            $body = str_replace("{attendees}", $sendTo->noAttendees(), $body);
-            $body = str_replace("{replyToName}", $replyTo->name, $body);
-            $mailer->setBody($body);
-            $send = $mailer->Send();
-            if (!$send) {
-                Log::add('Unable to send email to ' . $sendTo->name, Log::ERROR, 'com_ra_eventbooking');
+            if ($replyTo !== null) {
+                $mailer->addReplyTo($replyTo->email, $replyTo->name);
+            }
+            if ($attach->type) {
+                if ($attach->type === 'string') {
+                    helper::addStringAttachment($mailer, $attach);
+                }
+            }
+
+            // Send
+            try {
+                $mailTemplate->send();
+                if (self::$attachmentFile !== null) {
+                    @unlink(self::$attachmentFile);
+                    self::$attachmentFile = null;
+                }
+            } catch (\Exception $e) {
+                // Get the full chain
+                $msg = $e->getMessage();
+                $prev = $e->getPrevious();
+                while ($prev) {
+                    $msg .= ' | CAUSED BY: ' . $prev->getMessage();
+                    $prev = $prev->getPrevious();
+                }
+                throw new \RuntimeException('Error sending email:' . $msg);
             }
         }
     }
 
-    public static function sendEmailfromUser($sendTo, $copy, $replyTo, $subject, $content, $attach = null) {
+    public static function sendEmailfromUser($sendTo, $copy, $replyTo, $template, $fields) {
         $config = Factory::getConfig();
         $sender = array(
             $config->get('mailfrom'),
             $config->get('fromname')
         );
+        $fields['TONAME'] = $sendTo->name;
+        $fields['TOEMAIL'] = $sendTo->email;
+        $fields['REPLYTONAME'] = $replyTo->name;
 
-        $container = Factory::getContainer();
-        $mailer = $container->get(MailerFactoryInterface::class)->createMailer();
-        $mailer->isHtml(true);
-        $mailer->Encoding = '8bit';
-        $mailer->setSender($sender);
+        $mailer = Factory::getContainer()->get(MailerFactoryInterface::class)->createMailer();
+
+        // Load the administrator language file so mail template strings are available
+        $language = Factory::getApplication()->getLanguage();
+        $language->load('com_ra_eventbooking', JPATH_ADMINISTRATOR);
+        // Create the mail template instance
+        $langTag = Factory::getApplication()->getLanguage()->getTag(); // returns e.g. 'en-GB'
+        $mailTemplate = new MailTemplate('com_ra_eventbooking.' . $template, $langTag, $mailer);
+        $mailTemplate->addTemplateData($fields);
+
+        $mailTemplate->addRecipient($sendTo->email, $sendTo->name);
         if ($replyTo !== null) {
             $mailer->addReplyTo($replyTo->email, $replyTo->name);
         }
-        $mailer->setSubject($subject);
-        if ($attach !== null) {
-            if ($attach->type === 'string') {
-                self::addStringAttachment($mailer, $attach);
-            }
-        }
 
-//    $mailer->clearAllRecipients();
-        $mailer->addRecipient($sendTo->email, $sendTo->name);
+        $mailTemplate->addRecipient($sendTo->email, $sendTo->name);
         if ($copy !== null) {
             $mailer->addCC($copy->email, $copy->name);
         }
-        $body = $content;
-        $body = str_replace("{toName}", $sendTo->name, $body);
-        $body = str_replace("{toEmail}", $sendTo->email, $body);
-//     $body = str_replace("{attendees}", $sendTo->noAttendees(), $body);
-        $body = str_replace("{replyToName}", $replyTo->name, $body);
-        $mailer->setBody($body);
-        $send = $mailer->Send();
-        if (!$send) {
-            Log::add('Unable to send email to ' . $sendTo->name, Log::ERROR, 'com_ra_eventbooking');
+
+        // Send
+        try {
+            $send = $mailTemplate->send();
+            if (!$send) {
+                Log::add('Unable to send email to ' . $sendTo->name, Log::ERROR, 'com_ra_eventbooking');
+            }
+        } catch (\Exception $e) {
+            // Get the full chain
+            $msg = $e->getMessage();
+            $prev = $e->getPrevious();
+            while ($prev) {
+                $msg .= ' | CAUSED BY: ' . $prev->getMessage();
+                $prev = $prev->getPrevious();
+            }
+            Factory::getApplication()->enqueueMessage($msg, 'error');
         }
     }
 
     private static function addStringAttachment($mailer, $attach) {
-// Your string content, e.g. ICS
+
         $filename = $attach->filename;
         $encoding = $attach->encoding;
         $mimeType = $attach->mimeType;
         $contents = $attach->data;
 
-// Get Joomla tmp path from configuration
-        $config = Factory::getConfig();
-        $tmpPath = rtrim($config->get('tmp_path'), '/');  // e.g. /path/to/site/tmp
-// Build a unique filename
-        $file = $tmpPath . '/ics_' . uniqid() . '.ics';
+        // Get Joomla tmp path 
+        $tmpPath = Factory::getApplication()->get('tmp_path');
+        $tmpPath = $tmpPath . "/walkcalendar";
+        if (!is_dir($tmpPath)) {
+            mkdir($tmpPath, 0755, true);
+        }
+        // Build a unique filename
+        $file = $tmpPath . '/cal' . uniqid() . '.ics';
 
-// Write the string into the file
+        // Write the string into the file
         file_put_contents($file, $contents);
 
-// Now $file is a real file you can attach:
+        // Now $file is a real file you can attach:
         $mailer->addAttachment($file, $filename, $encoding, $mimeType);
 
-// Optionally delete after sending:
-//@unlink($file);
-    }
-
-    public static function getEmailTemplate($template, $evb) {
-        $filePath = JPATH_SITE . '/components/com_ra_eventbooking/src/Helper/templates/' . $template;
-        $content = \file_get_contents($filePath);
-        if (!$content) {
-            throw new \RuntimeException('Unable to get content of email:' . $template);
-        }
-        if ($evb->event_data === null) {
-            throw new \RuntimeException('Unable to up date email with event data: ' . $template);
-        }
-        $content = $evb->event_data->upDateEmail($content);
-        $content = $evb->updateEmailPaymentText($content);
-        return $evb->updateEmailforBookingInfo($content);
+        // Optionally delete after sending:
+        helper::$attachmentFile = $file;
     }
 
     public static function getUserData() {
@@ -518,8 +523,7 @@ class Ra_eventbookingHelper {
         $options->guest = $options->guest === '1';
         $options->maxattendees = intval($options->maxattendees);
         $options->maxguestattendees = intval($options->maxguestattendees);
-        $options->payment_required = $options->payment_required === '1';
-        $options->customsignature = $options->customsignature === '1';
+        // do not change  $options->payment_required 
         $options->total_places = intval($options->total_places);
         $options->telephone_required = $options->telephone_required === '1';
         $options->userlistvisibletousers = $options->userlistvisibletousers === '1';
@@ -529,6 +533,8 @@ class Ra_eventbookingHelper {
         $options->send_both_contacts = $options->send_both_contacts === '1';
         $options->send_booking_list_onclosed = $options->send_booking_list_onclosed === '1';
         $options->walk_leader_id = intval($options->walk_leader_id);
+        // do not change $options->bookingemailtextrequired 
+
         return $options;
     }
 }
@@ -542,10 +548,11 @@ class evb {
     public $options;
     public $params = null;
     public $actualClosingDate = null;
-    private $helper;
 
-    public function __construct($helper, $value, $mode) {
-        $this->helper = $helper;
+    //   private $helper;
+
+    public function __construct($value, $mode) {
+        //  $this->helper = $helper;
         if ($value === null) {
             throw new \RuntimeException('Invalid EVB information [null]');
         }
@@ -564,13 +571,13 @@ class evb {
         $event = new eventData();
         $event->process($value->event_data);
         $this->event_data = $event;
-        $this->options = $this->processParams($value->params);
         $this->params = $value->params; // save raw params for send email on closed
+        $this->options = $this->processParams($value->params);
         $this->actualClosingDate = $this->getClosingDate();
     }
 
     private function processParams($jsonparams) {
-        $globals = $this->helper::getRawGlobals();
+        $globals = helper::getRawGlobals();
         $options = \json_decode($jsonparams);
 
         foreach ($options as $key => $value) {
@@ -580,7 +587,45 @@ class evb {
                 }
             }
         }
-        return $this->helper::fixParams($options);
+        // payment_required and bookingemailtextrequired need converting to boolean
+        // to pass to js code
+        // never store options.
+
+        switch ($options->payment_required) {
+            case 'global':
+                $options->payment_required = $globals->payment_required === '1';
+                if ($globals->payment_required === '1') {
+                    $options->payment_details = $globals->payment_details;
+                } else {
+                    $options->payment_details = '';
+                }
+                break;
+            case 'no':
+                $options->payment_required = false;
+                $options->payment_details = '';
+                break;
+            case 'yes':
+                $options->payment_required = true;
+                break;
+        }
+        switch ($options->bookingemailtextrequired) {
+            case 'global':
+                $options->bookingemailtextrequired = $globals->bookingemailtextrequired === '1';
+                if ($globals->bookingemailtextrequired === '1') {
+                    $options->bookingemailtext = $globals->bookingemailtext;
+                } else {
+                    $options->bookingemailtext = '';
+                }
+                break;
+            case 'no':
+                $options->bookingemailtextrequired = false;
+                $options->bookingemailtext = '';
+                break;
+            case 'yes':
+                $options->bookingemailtextrequired = true;
+                break;
+        }
+        return helper::fixParams($options);
     }
 
     public function checkBooking($newBooking) {
@@ -689,6 +734,23 @@ class evb {
         throw new \RuntimeException('Group Booking Contact not set - contact group');
     }
 
+    public function getEventContacts($includeWalkLeader = false) {
+        $emails = [];
+        $ec = $this->getEventContact();
+        $emails[] = helper::getSendTo($ec->name, $ec->email);
+        if ($this->options->send_both_contacts) {
+            $gc = helper::getGroupContact();
+            $emails[] = helper::getSendTo($gc->name, $gc->email);
+        }
+        if ($includeWalkLeader or $this->isBookingClosed()) {
+            $wl = $this->getWalkLeader();
+            if ($wl !== null) {
+                $emails[] = helper::getSendTo($wl->name, $wl->email);
+            }
+        }
+        return helper::uniqueByProperty($emails, 'email');
+    }
+
     public function getWalkLeader() {
         $options = $this->options;
         if ($options->walk_leader_id !== 0) {
@@ -770,17 +832,10 @@ class evb {
         return $cldate->format('Y-m-d H:i:s');
     }
 
-    public function getEmailTitle($action) {
-        $title = $this->options->email_format;
-        if ($title === '') {
-            $title = '{yy/mm/dd} {action} {title}';
-        }
-        return $this->event_data->updateEmailTitle($action, $title);
-    }
-
-    public function updateEmailforBookingInfo($content) {
-
+    public function getEmailFields() {
+        $fields = [];
         $totalPlacesAvailable = $this->options->total_places;
+        $fields['PLACESAVAILABLE'] = $this->options->total_places;
         if ($totalPlacesAvailable === 0) {
             $totalPlacesAvailable = 'Unlimited places available';
             $placesAvailable = 'Unlimited';
@@ -789,27 +844,41 @@ class evb {
             $placesAvailable = $totalPlacesAvailable - $placesTaken;
             $placesTaken = $this->blc->noAttendees();
         }
+        $fields['PLACESTAKEN'] = $placesTaken;
         $noOfPlaces = $this->noOfPlacesText();
-        if ($this->options->customsignature) {
-            $signature = $this->options->signature;
-        } else {
-            $signature = 'Regards<br/><br/>' . $this->options->booking_contact_name;
-        }
+        $fields['TOTALPLACESAVAILABLE'] = $totalPlacesAvailable;
+        $fields['NOOFPLACES'] = $noOfPlaces;
+        $fields['SIGNATURE'] = 'Regards<br/><br/>' . $this->options->booking_contact_name;
 
-        $search = ["{placesAvailable}", "{placesTaken}", "{totalPlacesAvailable}",
-            "{noOfPlaces}", "{signature}"];
-        $replace = [$placesAvailable, $placesTaken,
-            $totalPlacesAvailable, $noOfPlaces, $signature];
-        return str_replace($search, $replace, $content);
+        if ($this->options->payment_required) {
+            $fields['PAYMENT'] = "<p>Please note that a payment is required for this event and your booking is not valid unless you follow the instructions below</p>"
+                    . $this->options->payment_details;
+        } else {
+            $fields['PAYMENT'] = '';
+        }
+        $fields['BOOKINGEMAILTEXT'] = $this->options->bookingemailtext;
+
+        $fields['BOOKINGLIST'] = $this->blc->getBookingTable($this->options->payment_required, true);
+        $fields['WAITINGLIST'] = $this->getWaitingTable(true);
+
+        //  $fields['reason'] = "A booking or the waiting list entry has been updated";
+        $fields['EVENTID'] = $this->event_id;
+
+        $fields = $this->event_data->addEmailFields($fields);
+        return $fields;
     }
 
-    public function updateEmailPaymentText($content) {
-        $out = '';
-        if ($this->options->payment_required) {
-            $out = "<p>Please note that a payment is required for this event and your booking is not valid unless you follow the instructions below</p>";
-            $out .= $this->options->payment_details;
-        }
-        return str_replace('{payment}', $out, $content);
+    public function sendEmailBookingOnClosed() {
+        // sent to booking contacts     
+        $to = $this->getEventContacts(true);
+        $replyTo = null;
+        $bookinglist = $this->blc->getBookingTable($this->options->payment_required, true);
+        $waitinglist = $this->getWaitingTable(true);
+        $mailTemplate = 'email_booking_list_closed';
+        $fields = self::getAllEmailFields($this);
+        $fields['BOOKINGLIST'] = $bookinglist;
+        $fields['WAITINGLIST'] = $waitinglist;
+        helper::sendEmailsToUser($to, null, $replyTo, $mailTemplate, $fields);
     }
 
     public function updateDatabase($which) {
@@ -1243,7 +1312,7 @@ class eventData implements \JsonSerializable {
     private $id = '';
     private $eventType = '';
     private $nationalUrl = '';
-    private $localPopupUrl = '';
+    //  do not $localPopupUrl as this changes if the website menu structure changes
     private $date = '';
     private $title = '';
     private $descriptionHtml = '';
@@ -1258,7 +1327,6 @@ class eventData implements \JsonSerializable {
         $this->id = $ew->admin->id;
         $this->eventType = $ew->admin->eventType;
         $this->nationalUrl = $ew->admin->nationalUrl;
-        $this->localPopupUrl = $ew->admin->localPopupUrl;
         // walkDate is in UTC 
         $this->date = $this->convertDateTimetoLocal($ew->basics->walkDate);
         $this->title = $ew->basics->title;
@@ -1267,10 +1335,8 @@ class eventData implements \JsonSerializable {
 
     private function convertDateTimetoLocal($utcString) {
         $utc = new \DateTime($utcString, new \DateTimeZone('UTC'));
-
         $localTz = new \DateTimeZone('Europe/London'); // or any IANA ID, e.g. 'America/New_York'
         $utc->setTimezone($localTz);
-
         return $utc->format('Y-m-d H:i:s');        // local time
     }
 
@@ -1285,7 +1351,6 @@ class eventData implements \JsonSerializable {
             $this->id = $value->id;
             $this->eventType = $value->eventType;
             $this->nationalUrl = $value->nationalUrl;
-            $this->localPopupUrl = $value->localPopupUrl;
             $this->date = $value->date;
             $this->title = $value->title;
             $this->descriptionHtml = $value->descriptionHtml;
@@ -1307,46 +1372,21 @@ class eventData implements \JsonSerializable {
         return $out;
     }
 
-    public function upDateEmail($content) {
-        $app = Factory::getApplication();
-        $siteName = $app->get('sitename');   // gets Global Configuration → Site Name
-        $siteUrl = Uri::base(false);
-
+    public function addEmailFields($fields) {
         $date = new \DateTime($this->date);
-        $walkDate = $date->format("D, jS M Y");
-        $cancelButton = "<a href='{cancelUrl}' style='border-radius: 5px; background-color:  #F08050; color: white;padding: 3px;margin:3px;'>CANCEL Booking</a>";
-        $viewButton = "<a href='" . $this->localPopupUrl . "' style='border-radius: 5px; background-color:  #9BC8AB; color: white;padding: 3px 3px;margin:3px;'>View Event</a>";
-
-        $swap = ["{groupName}" => $this->groupName,
-            "{eventId}" => $this->id,
-            "{eventType}" => strtolower($this->eventType),
-            "{eventDate}" => $walkDate,
-            "{eventTitle}" => $this->title,
-            "{eventDescription}" => $this->descriptionHtml,
-            "{nationalUrl}" => $this->nationalUrl,
-            "{localPopupUrl}" => $this->localPopupUrl,
-            "{cancelButton}" => $cancelButton,
-            "{viewButton}" => $viewButton,
-            "{siteName}" => $siteName,
-            "{siteUrl}" => $siteUrl,
-            "{dateUpdated}" => $this->dateUpdated];
-        foreach ($swap as $key => $value) {
-            $content = str_replace($key, $value, $content);
-        }
-        return $content;
-    }
-
-    public function updateEmailTitle($action, $title) {
-        $date = new \DateTime($this->date);
-        $swap = ["{date}" => $date->format("D, jS M Y"),
-            "{yyyy/mm/dd}" => $date->format('Y/m/d'),
-            "{yy/mm/dd}" => $date->format('y/m/d'),
-            "{action}" => $action,
-            "{title}" => $this->title];
-        foreach ($swap as $key => $value) {
-            $title = str_replace($key, $value, $title);
-        }
-        return $title;
+        $fields["DATE"] = $date->format("D, jS M Y");
+        $fields["YYYY/MM/DD"] = $date->format('Y/m/d');
+        $fields["YY/MM/DD"] = $date->format('y/m/d');
+        $fields["TITLE"] = $this->title;
+        $fields["GROUPNAME"] = $this->groupName;
+        $fields["EVENTID"] = $this->id;
+        $fields["EVENTTYPE"] = strtolower($this->eventType);
+        $fields["EVENTDATE"] = $date->format("D, jS M Y");
+        $fields["EVENTTITLE"] = $this->title;
+        $fields["EVENTDESCRIPTION"] = $this->descriptionHtml;
+        $fields["NATIONALURL"] = $this->nationalUrl;
+        $fields["DATEUPDATED"] = $this->dateUpdated;
+        return $fields;
     }
 
     public function getDate() {
@@ -1371,8 +1411,7 @@ class eventData implements \JsonSerializable {
             'groupName' => $this->groupName,
             'title' => $this->title,
             'descriptionHtml' => $this->descriptionHtml,
-            'nationalUrl' => $this->nationalUrl,
-            'localPopupUrl' => $this->localPopupUrl
+            'nationalUrl' => $this->nationalUrl
         ];
     }
 }

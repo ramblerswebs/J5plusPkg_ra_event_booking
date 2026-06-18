@@ -53,6 +53,7 @@ ra.bookings.queryServer = function (self, action) {
             this.url = "index.php?option=com_ra_eventbooking&view=eventchanged&format=json";
             break;
         case 'AdminEmailAllBooking':
+            this.progressMsg = 'Sending emails ...';
             this.url = "index.php?option=com_ra_eventbooking&view=adminemailallbook&format=json";
             break;
         case 'Adminemailsinglebooking':
@@ -98,6 +99,7 @@ ra.bookings.queryServer = function (self, action) {
             ra.showMsg(action);
             return;
     }
+    console.log(this.url);
     this.url = ra.baseDirectory() + this.url;
 
     this.action = function (dataObj, fcn) {
@@ -109,6 +111,11 @@ ra.bookings.queryServer = function (self, action) {
         if (dataObj === null) {
             dataObj = {noInput: true};
         }
+        var url = new URL(window.location.href);
+        var params = new URLSearchParams(url.search);
+        params.delete("walkid");
+        var link = new URL(`${url.origin}${url.pathname}?${params}`);
+        dataObj.currentURL = link.href;
         var _this = this;
         var formData = new FormData();
         formData.append("data", JSON.stringify(dataObj));
@@ -681,23 +688,22 @@ ra.bookings.evb = function (value) {
     this.options = value.options;
     this.actualClosingDate = value.actualClosingDate;
     this.overrides = [];
-// Display summary table row
+    // Display summary table row
     this.displaySummary = function (table, format, canEdit) {
-
-        table.tableRowStart();
+        var row = table.tableRowStart();
+        row.setAttribute('data-eventid', this.ewid);
+        row.classList.add('ra-event-booking-title');
+        row.addEventListener("click", function (e) {
+            var id = e.currentTarget.getAttribute('data-eventid');
+            ra.walk.displayWalkID(e, id);
+        });
         table.tableRowItem(this.ewid, format[0]);
         if (this.event !== null) {
             var date = this.event.getEventValue('{dowShortddmm}');
             var sortDate = this.event.basics.walkDate;
             var title = this.event.getEventValue('{title}');
             table.tableRowItem(date, format[1], sortDate);
-            var ele = table.tableRowItem(title, format[2]);
-            ele.setAttribute('data-eventid', this.ewid);
-            ele.classList.add('link-button', 'tiny', 'button', 'mintcake');
-            ele.addEventListener("click", function (e) {
-                var id = e.currentTarget.getAttribute('data-eventid');
-                ra.walk.displayWalkID(e, id);
-            });
+            table.tableRowItem(title, format[2]);
         } else {
             table.tableRowItem('', format[1]);
             table.tableRowItem('Event not found', format[2]);
@@ -713,7 +719,7 @@ ra.bookings.evb = function (value) {
         if (canEdit && this.event === null) {
             var disable = table.tableRowItem('Disable', format[5]);
             disable.setAttribute('data-eventid', this.ewid);
-            disable.classList.add('link-button', 'tiny', 'button', 'mintcake');
+            //  disable.classList.add('link-button', 'tiny', 'button', 'mintcake');
             var self = this;
             disable.addEventListener("click", function (e) {
                 var data = {
@@ -722,6 +728,7 @@ ra.bookings.evb = function (value) {
                 sa.action(data, (self, results) => {
                     self._BookingDisableResult(results);
                 });
+                e.stopPropagation();
             });
 
         } else {
@@ -964,10 +971,10 @@ ra.bookings.blc = function () {
     };
     this.list = function (tag, options) {
         var tags = [
-            {name: 'base', parent: 'root', tag: 'details'},
-            {name: 'button', parent: 'base', tag: 'summary', attrs: {class: 'link-button tiny button mintcake'}, innerHTML: 'Bookings so far'},
+            {name: 'base', parent: 'root', tag: 'details', attrs: {class: 'bookinglist'}},
+            {name: 'button', parent: 'base', tag: 'summary', innerHTML: 'Bookings so far'},
             {name: 'canedit', parent: 'base', tag: 'div', style: {clear: 'both', "color": "#8A2716"}},
-            {name: 'list', parent: 'base', tag: 'div', style: {clear: 'both'}}
+            {name: 'list', parent: 'base', tag: 'div'}
         ];
         var elements = ra.html.generateTags(tag, tags);
         var format = [{"title": "Name", "options": {align: "left"}, field: {type: 'text', filter: false, sort: false}},
@@ -978,9 +985,8 @@ ra.bookings.blc = function () {
             {"title": "Paid", "options": {align: "left", "style": {"color": "#8A2716"}}},
             {"title": "Action", "options": {align: "right", "style": {"min-width": "60px", "color": "#8A2716"}}}];
         if (options.canEdit) {
-            elements.canedit.innerHTML = "You are logged on with Booking Contact access and have additional options.";
             if (options.displayPaid) {
-                elements.canedit.innerHTML += "<br>To record payments, click on the Paid field.";
+                elements.canedit.innerHTML += "To record payments, click on the Paid field.";
             }
         }
 
@@ -1094,9 +1100,9 @@ ra.bookings.wlc = function () {
             return;
         }
         var tags = [
-            {name: 'base', parent: 'root', tag: 'details'},
-            {name: 'button', parent: 'base', tag: 'summary', attrs: {class: 'link-button tiny button mintcake'}, innerHTML: 'Notify me list'},
-            {name: 'list', parent: 'base', tag: 'div', style: {clear: 'both'}}
+            {name: 'base', parent: 'root', tag: 'details', attrs: {class: 'waitinglist'}},
+            {name: 'button', parent: 'base', tag: 'summary', innerHTML: 'Notify me list'},
+            {name: 'list', parent: 'base', tag: 'div'}
         ];
         var format = [{"title": "Name", "options": {align: "left"}, field: {type: 'text', filter: false, sort: false}},
             {"title": "Status", "options": {align: "left"}},
@@ -1137,8 +1143,6 @@ ra.bookings.wli = function (value) {
         return md5Email === this.md5Email;
     };
     this.list = function (eventTag, table, format) {
-
-
         table.tableRowStart();
         table.tableRowItem(this.name, format[0]);
         if (this.id > 0) {
@@ -1149,8 +1153,8 @@ ra.bookings.wli = function (value) {
 
         var self = this;
         var span = document.createElement("span");
-        ra.bookings.displayDeleteIcon(span, "Delete this booking", eventTag, "deleteBooker", {user: self});
-        ra.bookings.displayEmailIcon(span, "Email this user", eventTag, "emailSingleBooker", {user: self});
+        ra.bookings.displayDeleteIcon(span, "Delete this booking", eventTag, "deleteWaiting", {user: self});
+        ra.bookings.displayEmailIcon(span, "Email this user", eventTag, "AdminEmailSingleWaiting", {user: self});
         table.tableRowItem(span, format[2]);
 
         table.tableRowEnd();

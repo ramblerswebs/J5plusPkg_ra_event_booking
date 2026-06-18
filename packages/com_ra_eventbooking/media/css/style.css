@@ -88,3 +88,29 @@ div.booking.quill  div.ql-container.ql-snow{
     border-radius:0px 0px 15px 15px;
     width:95%;
 }
+
+tr.ra-event-booking-title {
+    cursor: pointer;
+}
+details.waitinglist summary,
+details.bookinglist summary{
+    background-color:var(--mintcake);
+    border-radius:5px;
+    padding-left: 5px;
+    margin-bottom: 5px;
+    cursor:pointer;
+}
+
+details.bookinglist[open]::details-content,
+details.waitinglist[open]::details-content{
+    border-left:thin solid grey;
+    padding: 3px;
+}
+details.waitinglist[open] summary,
+details.bookinglist[open] summary{
+    background-color:var(--sunrise);
+}
+summary {
+    display: list-item !important;
+    list-style: revert;
+}

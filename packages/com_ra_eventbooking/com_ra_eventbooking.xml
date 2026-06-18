@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="component" version="4.0" method="upgrade">
     <name>com_ra_eventbooking</name>
-    <creationDate>26 March 2025</creationDate>
+    <creationDate>18 June 2026</creationDate>
     <copyright>2025-2026 Ruby Tuesday</copyright>
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
     <author>Chris Vaughan </author>
     <authorEmail>ruby.tuesday@ramblers-webs.org.uk</authorEmail>
     <authorUrl>http://ramblers-webs.org.uk</authorUrl>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <description>Enable booking of events on a group web site, walks and non walking events</description>
     <namespace path="src">Ramblers\Component\Ra_eventbooking</namespace>
     
@@ -38,8 +38,8 @@
         <folder>icons</folder>
         <filename>joomla.asset.json</filename>
     </media>
-    <languages folder="site/languages">
-        <language tag="en-GB">en-GB/en-GB.com_ra_eventbooking.ini</language>
+    <languages folder="site/language">
+        <language tag="en-GB">en-GB/com_ra_eventbooking.ini</language>
     </languages>
     <administration>
         <menu>COM_RA_EVENTBOOKING</menu>
@@ -56,9 +56,9 @@
             <folder>presets</folder>
             <folder>sql</folder>
         </files>
-        <languages folder="administrator/languages">
-            <language tag="en-GB">en-GB/en-GB.com_ra_eventbooking.ini</language>
-            <language tag="en-GB">en-GB/en-GB.com_ra_eventbooking.sys.ini</language>
+        <languages folder="administrator/language">
+            <language tag="en-GB">en-GB/com_ra_eventbooking.ini</language>
+            <language tag="en-GB">en-GB/com_ra_eventbooking.sys.ini</language>
         </languages>
     </administration>
     <config>
@@ -70,7 +70,6 @@
     </config>
     <plugins>
     </plugins>
-    
 
 </extension>
 

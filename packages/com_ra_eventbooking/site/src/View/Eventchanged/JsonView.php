@@ -37,19 +37,18 @@ class JsonView extends BaseJsonView {
             $attach->encoding = 'base64';
             $attach->filename = 'walk.ics';
             $attach->mimeType = 'text/calendar';
-            
+
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
             $ew = $data->ew;
             $ebRecord->createEventData($ew);
             $ebRecord->updateDatabase('Event');
-            
+
             $to = $ebRecord->blc->getArray();
             $replyTo = $ebRecord->getEventContact();
 
-            $title = $ebRecord->getEmailTitle('EVENT CHANGED');
-            $content = helper::getEmailTemplate('eventchanged.html', $ebRecord);
-            helper::sendEmailsToUser($to, null, $replyTo, $title, $content, $attach);
-
+            $mailtemplate = 'event_changed';
+            $fields = helper::getAllEmailFields($ebRecord);
+            helper::sendEmailsToUser($to, null, $replyTo, $mailtemplate, $fields, $attach);
             $record = (object) [
                         'feedback' => $feedback];
             echo new JsonResponse($record);

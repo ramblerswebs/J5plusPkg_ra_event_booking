@@ -49,7 +49,7 @@ class JsonView extends BaseJsonView {
             $code = self::generateCode();
 
             $feedback[] = '<h3>Verification email sent</h3>';
-            $emailTemplate = 'verifyemail.html';
+            $mailTemplate = 'verify_email';
 
             // send email confirmation
 
@@ -58,12 +58,9 @@ class JsonView extends BaseJsonView {
             $replyTo->name = 'NO-REPLY';
             $replyTo->email = 'no-reply@ramblers-webs.org.uk';
 
-            $title = 'Verify your email address - ' . $code;
-            $content = helper::getEmailTemplate($emailTemplate, $ebRecord);
-            $content = str_replace("{verifyCode}", $code, $content);
-
-            helper::sendEmailsToUser($to, null, $replyTo, $title, $content);
-
+            $fields = helper::getAllEmailFields($ebRecord);
+            $fields['VERIFYCODE'] = $code;
+            helper::sendEmailsToUser($to, null, $replyTo, $mailTemplate, $fields);
             // return status of booking
             $record = (object) [
                         'feedback' => $feedback,

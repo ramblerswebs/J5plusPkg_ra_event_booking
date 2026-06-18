@@ -100,7 +100,7 @@ final class EmailBookingList extends CMSPlugin implements SubscriberInterface {
                 $this->logTask('  Debug: send booking list on closed is on ' . $event->event_id);
                 if ($event->isBookingClosed()) {
                     $this->logTask('   Debug: event booking closed: ' . $event->event_id);
-                    helper::sendEmailBookingOnClosed($event);
+                    $event->sendEmailBookingOnClosed();
                     $this->logTask('     Debug: email sent: ' . $event->event_id);
                     helper::resetEmailOnClosed($event);
 

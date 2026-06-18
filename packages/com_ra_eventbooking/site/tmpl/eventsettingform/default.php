@@ -43,7 +43,7 @@ $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
         </h3>
     <?php else : ?>
         <?php if (!empty($this->item->id)): ?>
-            <h1><?php // echo Text::sprintf('COM_RA_EVENTBOOKING_EDIT_ITEM_TITLE', $this->item->id);  ?></h1>
+            <h1><?php // echo Text::sprintf('COM_RA_EVENTBOOKING_EDIT_ITEM_TITLE', $this->item->id);     ?></h1>
         <?php else: ?>
             <h1><?php echo Text::_('COM_RA_EVENTBOOKING_ADD_ITEM_TITLE'); ?></h1>
         <?php endif; ?>
@@ -89,14 +89,13 @@ $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
                 echo $this->form->renderField('notrecommended', 'params');
                 echo $this->form->renderField('email_waiting', 'params');
                 echo $this->form->renderField('send_both_contacts', 'params');
-                echo $this->form->renderField('email_format', 'params');
-                echo $this->form->renderField('customsignature', 'params');
-                echo $this->form->renderField('signature', 'params');
                 echo $this->form->renderField('closingoption', 'params');
                 echo $this->form->renderField('customclosingdate', 'params');
                 echo $this->form->renderField('send_booking_list_onclosed', 'params');
                 echo $this->form->renderField('task_comment', 'params');
                 echo $this->form->renderField('walk_leader_id', 'params');
+                echo $this->form->renderField('bookingemailtextrequired', 'params');
+                echo $this->form->renderField('bookingemailtext', 'params');
 
                 echo HTMLHelper::_('uitab.endTab');
 

@@ -155,18 +155,18 @@
             
             
             <field name="payment_required" 
-                   type="list" 
-                   useglobal="true"
+                   type="useglobalyesno"
+                   global_param="payment_required"
                    label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_PAYMENT_REQUIRED" 
                    description="COM_RA_EVENTBOOKING_FORM_DESC_EVENTSETTING_PAYMENT_REQUIRED" 
                    hint="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_PAYMENT_REQUIRED"
             >
-                <option value="0">JNO</option>
-                <option value="1">JYES</option>
+                <option value="no">JNO</option>
+                <option value="yes">JYES</option>
             </field>
             <field name="payment_details" 
-                   showon="payment_required:1"
-                   height="250"
+                   showon="payment_required:yes"
+                   height="150"
                    filter="safehtml" 
                    type="editor" 
                    useglobal="true"
@@ -197,11 +197,11 @@
                 <option value="list">Send booking list email after each change</option>
             </field>
             <field name="notrecommended" 
-                       type="note" 
-                       label="Not recommended" 
-                       showon="email_booking:list"
-                       description="This option is not production ready, it currently takes a long time to send the emails" 
-                       class="alert alert-info" />
+                   type="note" 
+                   label="Not recommended" 
+                   showon="email_booking:list"
+                   description="This option is not production ready, it currently takes a long time to send the emails" 
+                   class="alert alert-info" />
             <field name="email_waiting" 
                    useglobal="true" 
                    showon="email_booking:individual,list"
@@ -222,40 +222,7 @@
                 <option value="0">Just to Event contact</option>
                 <option value="1">To Event contact and group contact, if different</option>
             </field>
-       
-            
-            <field name="email_format" 
-                   type="text" 
-                   useglobal="true" 
-                   label="COM_RA_EVENTBOOKING_FORM_LBL_GROUP_EMAIL_FORMAT" 
-                   description="COM_RA_EVENTBOOKING_FORM_DESC_GROUP_EMAIL_FORMAT" 
-                   hint="COM_RA_EVENTBOOKING_FORM_LBL_GROUP_EMAIL_FORMAT"
-            />
-            <field name="customsignature" 
-                   type="list" 
-                   filter="raw"
-                   useglobal="true" 
-                   label="Custom email signature" 
-                   description="Have a custom signature on all emails" 
-            >
-                <option value="0">JNO</option>
-                <option value="1">JYES</option>
-            </field>
-          
-            <field name="signature" 
-                   showon="customsignature:1"
-                   height="250"
-                   filter="safehtml" 
-                   type="editor" 
-                   useglobal="true"
-                   label="Email Signature" 
-                   description="Signature to use in place of default group name" 
-                   hint="Signature to use in place of default group name"
-            >
-                <editor-options>
-                    <option name="startup_mode">design</option>  <!-- Forces visual mode -->
-                </editor-options>
-            </field>
+                         
             <field name="closingoption" 
                    type="list"   
                    useglobal="true"      
@@ -304,7 +271,28 @@
                 description="OPTIONAL Walk/Event leader can be sent a copy of the bookings for their event" 
                 hint="Select user"
             /> 
-        
+            <field name="bookingemailtextrequired" 
+                   type="useglobalyesno"
+                   global_param="bookingemailtextrequired"
+                   label="Booking email text" 
+                   description="Do wish to add custom text to emails sent when places are booked" 
+            >
+                <option value="no">JNO</option>
+                <option value="yes">JYES</option>
+            </field>
+            <field name="bookingemailtext" 
+                   showon="bookingemailtextrequired:yes"
+                   useglobal="true"
+                   filter="safehtml" 
+                   height="150"
+                   type="editor" 
+                   label="Booking emails text" 
+                   description="Optional text to add to Booking emails" 
+            >
+                <editor-options>
+                    <option name="startup_mode">design</option>  <!-- Forces visual mode -->
+                </editor-options>
+            </field>
        
      
            

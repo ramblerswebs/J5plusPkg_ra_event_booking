@@ -18,6 +18,7 @@ use \Ramblers\Component\Ra_eventbooking\Site\Helper\Ra_eventbookingHelper as hel
 use Joomla\CMS\Response\JsonResponse;
 use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\MVC\View\JsonView as BaseJsonView;
+use Joomla\CMS\Factory;
 
 // use Joomla\CMS\Component\ComponentHelper;
 // No direct access
@@ -42,7 +43,7 @@ class JsonView extends BaseJsonView {
             $name = $bookingData->name;
             $email = $bookingData->email;
             if ($id > 0) {
-                $juser = \JFactory::getUser();
+                $juser = Factory::getUser();
                 $email = $juser->email;
                 $name = $juser->name;
             }
@@ -52,24 +53,24 @@ class JsonView extends BaseJsonView {
                 $item = helper::getNewWaiting($id, $name, $email, "Internal");
                 $ebRecord->wlc->addItem($item);
                 $feedback[] = '<h3>We have added you to the list and will notify you when places become available</h3>';
-                $emailTemplate = 'waitingadd.html';
+                $mailTemplate = 'waiting_add';
             } else {
                 $ebRecord->removeWaiting(md5($email));
                 $feedback[] = '<h3>We have removed you from the list, so you will not receive any further notifications</h3>';
-                $emailTemplate = 'waitingdelete.html';
+                $mailTemplate = 'waiting_delete';
             }
             $ebRecord->updateDatabase('Waiting');
             $to = [$item];
             $replyTo = $ebRecord->getEventContact();
             if ($ebRecord->options->email_booking === 'individual') {
                 if ($ebRecord->options->email_waiting) {
-                    $copyTo = helper::getEventContacts($ebRecord);
+                    $copyTo = $ebRecord->getEventContacts();
                 }
             }
             $copyTo = null;
-            $title = $ebRecord->getEmailTitle('NOTIFY');
-            $content = helper::getEmailTemplate($emailTemplate, $ebRecord);
-            helper::sendEmailsToUser($to, $copyTo, $replyTo, $title, $content);
+
+            $fields = helper::getAllEmailFields($ebRecord);
+            helper::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields);
             if ($ebRecord->options->email_booking === 'list') {
                 if ($ebRecord->options->email_waiting) {
                     helper::sendBookingListUpdate($ebRecord, 'WAITING CHANGE');

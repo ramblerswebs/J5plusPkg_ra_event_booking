@@ -48,10 +48,10 @@ class JsonView extends BaseJsonView {
 
             $copy = $replyTo;
 
-            $title = $ebRecord->getEmailTitle('QUERY');
-            $content = helper::getEmailTemplate('emailbookingcontact.html', $ebRecord);
-            $content = str_replace("{emailContent}", $data->emailContent, $content);
-            helper::sendEmailfromUser($to, $copy, $replyTo, $title, $content);
+            $mailTemplate = 'email_booking_contact';
+            $fields = helper::getAllEmailFields($ebRecord);
+            $fields['EMAILCONTENT'] = $data->emailContent;
+            helper::sendEmailfromUser($to, $copy, $replyTo, $mailTemplate, $fields);
 
             $feedback[] = '<h3>Your email has been sent to the booking contact, ' . $to->name . '</h3>';
             $record = (object) [

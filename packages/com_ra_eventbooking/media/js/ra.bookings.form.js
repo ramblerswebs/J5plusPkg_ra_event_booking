@@ -72,7 +72,6 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             self.elements.bookplace.innerHTML = '';
             self.bookingForm(self.elements.bookplace);
             self.emailBookingContact(self.elements.lists);
-            self.elements.lists.appendChild(document.createElement('p'));
             self.bookingLists(self.elements.lists);
         });
         this.tag.addEventListener('userDetailsChanged', (e) => {
@@ -106,9 +105,9 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         });
     };
     this.refreshDisplay = function () {
+        this.formModal.close();
         let event = new Event("bookingInfoChanged"); // 
         document.dispatchEvent(event);
-        this.formModal.close();
     };
     this.displayEvent = function (tag) {
         ra.bookings.addTextTag(tag, 'h3', ra.date.dowddmmyyyy(ew.basics.walkDate));
@@ -139,7 +138,11 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         ra.bookings.addTextTag(tag, "h2", "Booking place(s) on this event");
         ra.bookings.addTextTag(tag, 'p', 'Welcome - you are not logged on to this site and hence your booking will be as a guest');
         ra.bookings.addTextTag(tag, 'p', 'Please provide the following contact information');
-        ra.bookings.addTextTag(tag, 'p', '<small>Note that your name may be visible to other users, so you may wish to abbreviate it, e.g. Jane S rather than Jane Smith, Other details may be viewed by the groups booking contacts</small>');
+
+        if (this.evb.options.userlistvisibletousers || this.evb.options.userlistvisibletoguests) {
+            ra.bookings.addTextTag(tag, 'p', '<small>Note that your name may be visible to other users, so you may wish to abbreviate it, e.g. Jane S rather than Jane Smith, Other details may be viewed by the groups booking contacts</small>');
+        }
+
         this._name = this.input.addText(tag, 'name', "Your name:", this.bookingData, 'name', 'Who is making this booking', null);
         this._email = this.input.addEmail(tag, 'email', "Email Address:", this.bookingData, 'email', 'Contact\'s email address', null);
         this._confirmEmail = this.input.addEmail(tag, 'email', "Confirm Email Address:", this.bookingData, 'confirmEmail', 'Confirm email address', null);
@@ -387,15 +390,19 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             case BookingStatus.WAITING:
             case BookingStatus.BOOKED:
             case BookingStatus.NONE:
-                this.evb.listAttendees(tag, this.user);
-                this.evb.listWaiting(tag, this.user);
                 if (this.user.canEdit && this.evb.noAttendees() > 0) {
+                    var comment = document.createElement('div');
+                    comment.style.color = '#8A2716';
+                    comment.innerHTML = "You are logged on with Booking Contact access and have additional options.";
+                    tag.appendChild(comment);
                     var email = document.createElement("div");
                     email.innerHTML = "<i>Email booking list/waiting list to me&nbsp;&nbsp;</i>";
                     email.style.color = '#8A2716';
                     tag.appendChild(email);
                     ra.bookings.displayEmailIcon(email, "Email booking list to me", tag, "AdminEmailBookingList");
                 }
+                this.evb.listAttendees(tag, this.user);
+                this.evb.listWaiting(tag, this.user);
         }
     };
     this.getStatus = function () {
@@ -462,22 +469,6 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         }
 
         var maxPlaces = this.evb.calcMaxPlaces(this.user);
-        if (this.bookingItem !== null) {
-            var ele = document.createElement('div');
-            tag.appendChild(ele);
-            var del = document.createElement("span");
-            del.style.paddingRight = '10px';
-            del.innerHTML = 'Cancel booking';
-            ele.appendChild(del);
-            ra.bookings.displayDeleteIcon(ele, "Cancel this booking", tag, "deleteBooking", {user: self});
-            tag.addEventListener('deleteBooking', (e) => {
-                if (ra.showConfirm('Confirm you wish to cancel booking')) {
-                    self.bookingData.attendees = 0;
-                    self.submitBooking();
-                }
-            });
-        }
-
         var container = document.createElement("span");
         container.classList.add('submit');
         tag.appendChild(container);
@@ -500,7 +491,28 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             }
         } else {
             ra.bookings.addTextTag(tag, "h3", "Sorry, booking has now closed");
+            if (this.bookingItem !== null) {
+                ra.bookings.addTextTag(tag, "p", "If you cancel your booking the organisers may not be notified in time, so you may need to try and contact them directly");
+            }
         }
+        if (this.bookingItem !== null) {
+            var ele = document.createElement('div');
+            tag.appendChild(ele);
+            var del = document.createElement("span");
+            del.style.paddingRight = '10px';
+            del.innerHTML = 'Cancel booking';
+            ele.appendChild(del);
+            ra.bookings.displayDeleteIcon(ele, "Cancel this booking", tag, "deleteBooking", {user: self});
+            tag.addEventListener('deleteBooking', (e) => {
+                if (ra.showConfirm('Confirm you wish to cancel booking')) {
+                    self.bookingData.attendees = 0;
+                    self.submitBooking();
+                }
+            });
+        }
+
+
+
         var displayWaitingList = false;
         if (maxPlaces === 0) {
             // fully booked
@@ -513,7 +525,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         if (waitingItem !== null) {
             displayWaitingList = true;
         }
-        if (displayWaitingList && maxPlaces !== 0) {
+        if (displayWaitingList && maxPlaces === 0) {
             this.displayWaitingListOptions(tag);
         }
     }

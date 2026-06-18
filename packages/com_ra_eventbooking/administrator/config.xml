@@ -103,7 +103,7 @@
         </field>
         <field name="payment_details" 
                showon="payment_required:1"
-               height="250"
+               height="150"
                filter="safehtml" 
                type="editor" 
                label="COM_RA_EVENTBOOKING_FORM_LBL_EVENTSETTING_PAYMENT_DETAILS" 
@@ -134,11 +134,11 @@
             <option value="list">Send booking list email after each change</option>
         </field>
         <field name="notrecommended" 
-                 type="note" 
-                 label="Not recommended" 
-                 showon="email_booking:list"
-                 description="This option is not production ready, it currently takes a long time to send the emails" 
-                 class="alert alert-info" />
+               type="note" 
+               label="Not recommended" 
+               showon="email_booking:list"
+               description="This option is not production ready, it currently takes a long time to send the emails" 
+               class="alert alert-info" />
         <field name="email_waiting" 
                showon="email_booking:individual,list"
                type="list" 
@@ -149,35 +149,7 @@
             <option value="0">Booking changes</option>
             <option value="1">Booking and waiting list changes</option>
         </field>
-       
-        <field name="email_format" 
-               type="text" 
-               label="COM_RA_EVENTBOOKING_FORM_LBL_GROUP_EMAIL_FORMAT" 
-               description="COM_RA_EVENTBOOKING_FORM_DESC_GROUP_EMAIL_FORMAT" 
-               hint="COM_RA_EVENTBOOKING_FORM_LBL_GROUP_EMAIL_FORMAT"
-        />
-        <field name="customsignature" 
-               type="list" 
-               filter="raw"
-               label="Custom email signature" 
-               description="Have a custom signature on all emails" 
-        >
-            <option value="0">JNO</option>
-            <option value="1">JYES</option>
-        </field>
-        <field name="signature" 
-               showon="customsignature:1"
-               height="250"
-               type="editor"
-               filter="safehtml" 
-               label="Email Signature" 
-               description="Signature to use in place of default" 
-               hint="Signature to use in place of default"
-        >
-            <editor-options>
-                <option name="startup_mode">design</option>  <!-- Forces visual mode -->
-            </editor-options>
-        </field>
+  
         <field name="closingoption" 
                type="list"        
                label="COM_RA_EVENTBOOKING_FORM_LBL_USERLISTCLOSING"
@@ -212,8 +184,28 @@
                label="Set up task" 
                showon="send_booking_list_onclosed:1"
                description="For this option to work a scheduled task must be set up, see Users Guide for details" 
-               class="alert alert-info" />
- 
+               class="alert alert-info" 
+        />
+        <field name="bookingemailtextrequired" 
+               type="list" 
+               label="Booking email text" 
+               description="Do wish to add custom text to emails sent when places are booked" 
+        >
+            <option value="0">JNO</option>
+            <option value="1">JYES</option>
+        </field>
+        <field name="bookingemailtext" 
+               showon="bookingemailtextrequired:1"
+               height="150"
+               filter="safehtml" 
+               type="editor" 
+               label="Booking emails text" 
+               description="Optional text to add to Booking emails" 
+        >
+            <editor-options>
+                <option name="startup_mode">design</option>  <!-- Forces visual mode -->
+            </editor-options>
+        </field>
     </fieldset>
     
     <fieldset name="permissions" description="JCONFIG_PERMISSIONS_DESC" label="JCONFIG_PERMISSIONS_LABEL">

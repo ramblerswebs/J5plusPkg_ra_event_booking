@@ -44,19 +44,20 @@ class JsonView extends BaseJsonView {
             $to = [helper::getSendTo($juser->name, $juser->email)];
 
             $replyTo = null;
-            $copy = $ebRecord->getEventContact();
+            $copyTo = $ebRecord->getEventContact();
 
-            if ($copy->email === $juser->email) {
-                $copy = null;
+            if ($copyTo->email === $juser->email) {
+                $copyTo = null;
             }
 
-            $title = $ebRecord->getEmailTitle('BOOKING LIST');
-            $content = helper::getEmailTemplate('emailbookinglist.html', $ebRecord);
-            $content = str_replace("{bookinglist}", $bookinglist, $content);
-            $content = str_replace("{waitinglist}", $waitinglist, $content);
-            $content = str_replace("{reason}", "", $content);
-            helper::sendEmailsToUser($to, $copy, $replyTo, $title, $content);
 
+            $mailTemplate = 'email_booking_list';
+            $fields = helper::getAllEmailFields($ebRecord);
+            $fields['BOOKLIST'] = $bookinglist;
+            $fields['WAITINGLIST'] = $waitinglist;
+            $fields['REASON'] = "";
+
+            helper::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields);
             $feedback[] = '<h3>Email has been sent</h3>';
             $record = (object) [
                         'feedback' => $feedback

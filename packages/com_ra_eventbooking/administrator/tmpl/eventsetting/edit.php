@@ -61,14 +61,13 @@ HTMLHelper::_('bootstrap.tooltip');
         echo $this->form->renderField('email_waiting', 'params');
         echo $this->form->renderField('send_both_contacts', 'params');
 
-        echo $this->form->renderField('email_format', 'params');
-        echo $this->form->renderField('customsignature', 'params');
-        echo $this->form->renderField('signature', 'params');
         echo $this->form->renderField('closingoption', 'params');
         echo $this->form->renderField('customclosingdate', 'params');
         echo $this->form->renderField('send_booking_list_onclosed', 'params');
         echo $this->form->renderField('task_comment', 'params');
         echo $this->form->renderField('walk_leader_id', 'params');
+        echo $this->form->renderField('bookingemailtextrequired', 'params');
+        echo $this->form->renderField('bookingemailtext', 'params');
 
         echo HTMLHelper::_('uitab.endTab');
 

@@ -35,14 +35,14 @@ class JsonView extends BaseJsonView {
             $to = $ebRecord->wlc->getArray();
             if (count($to) > 0) {
                 $replyTo = $ebRecord->getEventContact();
-                $title = $ebRecord->getEmailTitle('PLACES');
-                $content = helper::getEmailTemplate('notifylistemail.html', $ebRecord);
+                $mailtemplate = 'notify_list_email';
                 $noOfPlaces = $ebRecord->noOfPlaces();
                 if ($noOfPlaces < 1) {
                     throw new \RuntimeException('Email to waiting list: no places available');
                 }
-                helper::sendEmailsToUser($to, null, $replyTo, $title, $content);
-            }   
+                $fields = helper::getAllEmailFields($ebRecord);
+                helper::sendEmailsToUser($to, null, $replyTo, $mailtemplate, $fields);
+            }
             $record = (object) [
                         'feedback' => $feedback
             ];

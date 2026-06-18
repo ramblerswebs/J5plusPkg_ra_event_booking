@@ -31,6 +31,8 @@ use \Ramblers\Component\Ra_eventbooking\Site\Helper\Ra_eventbookingHelper as hel
 use Joomla\CMS\Response\JsonResponse;
 use Joomla\CMS\MVC\View\JsonView as BaseJsonView;
 use Joomla\CMS\Component\ComponentHelper;
+use Joomla\CMS\Factory;
+use Joomla\CMS\User\UserFactoryInterface;
 
 // No direct access
 defined('_JEXEC') or die;
@@ -57,7 +59,7 @@ class JsonView extends BaseJsonView {
             $attach->mimeType = 'text/calendar';
             $bookingData = $data->bookingData;
             if ($bookingData->id > 0) {
-                $juser = \JFactory::getUser($bookingData->id);
+                $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($bookingData->id);
                 $bookingData->email = $juser->email;
                 $bookingData->name = $juser->name;
             }
@@ -87,7 +89,7 @@ class JsonView extends BaseJsonView {
             $ebRecord->updateBooking($newBooking);
             $ebRecord->updateDatabase('Booking');
             if ($newBooking->noAttendees() > 0) {
-                $feedback[] = '<h3>You have been booked on this event</h3>';
+                $feedback[] = '<h3>You have been booked on this event</h3><p>We have sent you a confirmation email</p>';
             } else {
                 $feedback[] = '<h3>Your booking for this event has been removed/cancelled</h3>';
             }
@@ -114,43 +116,37 @@ class JsonView extends BaseJsonView {
     }
 
     private function emailUserBooking($ebRecord, $currentBooking, $attach) {
-        $emailTemplate = 'newbooking.html';
-        $action = 'BOOKING';
+
         $ewid = $ebRecord->event_id;
         $email = $currentBooking->email;
         $to[] = $currentBooking;
         $replyTo = $ebRecord->getEventContact();
         $copyTo = null;
         if ($ebRecord->options->email_booking === 'individual') {
-            $copyTo = helper::getEventContacts($ebRecord);
+            $copyTo = $ebRecord->getEventContacts();
         }
-        $title = $ebRecord->getEmailTitle($action);
-        $content = helper::getEmailTemplate($emailTemplate, $ebRecord);
-        $siteUrl = Uri::root();
-        $cancelURL = $siteUrl . '?option=com_ra_eventbooking&view=cancelbooking&id=' . $ewid . '&cancel=' . md5($email);
-        $content = str_replace('{cancelUrl}', $cancelURL, $content);
-        helper::sendEmailsToUser($to, $copyTo, $replyTo, $title, $content, $attach);
+        $fields = helper::getAllEmailFields($ebRecord, md5($email));
+        helper::sendEmailsToUser($to, $copyTo, $replyTo, 'new_booking', $fields, $attach);
         helper::sendBookingListUpdate($ebRecord);
     }
 
     private function emailUserCancelled($ebRecord, $currentBooking) {
         // send user and booking contacts email
-        $emailTemplate = 'removebooking.html';
-        $attach = null;
+        $mailTemplate = 'remove_booking';
         $to[] = $currentBooking;
         $replyTo = $ebRecord->getEventContact();
         $copyTo = null;
         if ($ebRecord->options->email_booking === 'individual') {
-            $copyTo = helper::getEventContacts($ebRecord);
+            $copyTo = $ebRecord->getEventContacts();
         }
-        $title = $ebRecord->getEmailTitle('CANCEL');
-        $content = helper::getEmailTemplate($emailTemplate, $ebRecord);
-        helper::sendEmailsToUser($to, $copyTo, $replyTo, $title, $content, $attach);
+
+        $fields = helper::getAllEmailFields($ebRecord);
+        helper::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields);
         helper::sendBookingListUpdate($ebRecord);
     }
 
     private static function checkInput($guest, $maxattendees, $maxguestattendees, $bookingData) {
-        $juser = \JFactory::getUser($bookingData->id);
+        $juser = Factory::getUser($bookingData->id);
         $canEdit = helper::canEdit();
         if (!$canEdit) {
             if ($juser->id !== $bookingData->id) {

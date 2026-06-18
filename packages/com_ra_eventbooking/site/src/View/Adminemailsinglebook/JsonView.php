@@ -39,12 +39,11 @@ class JsonView extends BaseJsonView {
             if ($replyTo === null) {
                 throw new \RuntimeException('Unable to find sender');
             }
-            $copy = $ebRecord->getEventContact();
-
-            $title = $ebRecord->getEmailTitle('EMAIL');
-            $content = helper::getEmailTemplate('emailbookers.html', $ebRecord);
-            $content = str_replace("{emailContent}", $data->emailContent, $content);
-            helper::sendEmailsToUser($to, $copy, $replyTo, $title, $content);
+            $copyTo = $ebRecord->getEventContact();
+            $mailTemplate = 'email_bookers';
+            $fields = helper::getAllEmailFields($ebRecord);
+            $fields['EMAILCONTENT'] = $data->emailContent;
+            helper::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields);
 
             $feedback[] = '<h3>Email has been sent</h3>';
             $record = (object) [

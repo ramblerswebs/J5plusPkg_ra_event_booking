@@ -24,7 +24,7 @@ ra.bookings = function (tag, ewid, ew, ics) {
     this.elements = null;
     this.evb = null;
     this.user = null;
-     this.lastNoAttendees = 0;
+    this.lastNoAttendees = 0;
     this.wasfullyBooked = false;
     this.container = document.createElement("div");
     this.container.classList.add('walkitem');
@@ -49,7 +49,7 @@ ra.bookings = function (tag, ewid, ew, ics) {
         document.addEventListener('bookingInfoChanged', function (e) {
             self.container.innerHTML = '';
             self.initialise();
-        });
+        }, {once: true});
         var data = {ewid: this.ewid};
         var sa = new ra.bookings.queryServer(this, 'getSingleEvent');
         sa.action(data, (self, results) => {
@@ -67,7 +67,7 @@ ra.bookings = function (tag, ewid, ew, ics) {
         this.user = new ra.bookings.user(results.data.user);
         this.evb.displayBookingStatus(this.elements.content, this.user);
         this.evb.displayUserInfo(this.elements.content, this.user.id);
-        // has ev changed since last view
+        // has ew changed since last view
         // if so ask server to email users of change.
         if (this.ew.admin.dateUpdated.toISOString() > this.evb.event_data.dateUpdated || this.evb.event_data.dateUpdated === null) {
             var data = {ewid: this.ewid,
@@ -76,7 +76,6 @@ ra.bookings = function (tag, ewid, ew, ics) {
 
             var sa = new ra.bookings.queryServer(this, 'EventChanged');
             sa.action(data, (self, results) => {
-
             });
         }
         var noAttendees = this.evb.noAttendees();

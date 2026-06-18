@@ -31,14 +31,15 @@ class JsonView extends BaseJsonView {
             $data = helper::getPostedData();
             $ewid = $data->ewid;
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
-            
+
             $to = $ebRecord->wlc->getArray();
             $replyTo = $ebRecord->getEventContact();
-            $copy = $replyTo;
-            $title = $ebRecord->getEmailTitle('EMAIL');
-            $content = helper::getEmailTemplate('emailwaiting.html', $ebRecord);
-            $content = str_replace("{emailContent}", $data->emailContent, $content);
-            helper::sendEmailsToUser($to, $copy, $replyTo, $title, $content);
+            $copyTo = $replyTo;
+
+            $mailTemplate = 'email_waiting';
+            $fields = helper::getAllEmailFields($ebRecord);
+            $fields['EMAILCONTENT'] = $data->emailContent;
+            helper::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields);
             $feedback[] = '<h3>Emails have been sent</h3>';
             $record = (object) [
                         'feedback' => $feedback
