@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <extension type="plugin" group="task" method="upgrade">
-	<name>plg_task_eventbooking</name>
-        <folder>task</folder>
-	<author>Chris Vaughan</author>
-	<creationDate>26-03-2026</creationDate>
-	<copyright>(C) 2026 Open Source Matters, Inc.</copyright>
-	<license>GNU General Public License version 2 or later; see LICENSE.txt</license>
-	<authorEmail>ruby.tuesday@ramblers-webs.org.uk</authorEmail>
-	<authorUrl>www.ramblers-webs.org.uk</authorUrl>
-	<version>1.0.2</version>
-	<description><![CDATA[Event Booking: task to email booking list once booking closed]]></description>
-	<namespace path="src">Ramblers\Plugin\Task\EventBooking</namespace>
-	<files>
-		<folder plugin="eventbooking">services</folder>
-		<folder>src</folder>
-	</files>
-	<languages>
-		<language tag="en-GB">language/en-GB/plg_task_eventbooking.ini</language>
-		<language tag="en-GB">language/en-GB/plg_task_eventbooking.sys.ini</language>
-	</languages>
+    <name>plg_task_eventbooking</name>
+    <folder>task</folder>
+    <author>Chris Vaughan</author>
+    <creationDate>26-03-2026</creationDate>
+    <copyright>(C) 2026 Open Source Matters, Inc.</copyright>
+    <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
+    <authorEmail>ruby.tuesday@ramblers-webs.org.uk</authorEmail>
+    <authorUrl>www.ramblers-webs.org.uk</authorUrl>
+    <version>1.0.4</version>
+    <description><![CDATA[Event Booking: task to email booking list once booking closed]]></description>
+    <namespace path="src">Ramblers\Plugin\Task\EventBooking</namespace>
+    <files>
+        <folder plugin="eventbooking">services</folder>
+        <folder>src</folder>
+    </files>
+    <languages>
+        <language tag="en-GB">language/en-GB/plg_task_eventbooking.ini</language>
+        <language tag="en-GB">language/en-GB/plg_task_eventbooking.sys.ini</language>
+    </languages>
 </extension>
