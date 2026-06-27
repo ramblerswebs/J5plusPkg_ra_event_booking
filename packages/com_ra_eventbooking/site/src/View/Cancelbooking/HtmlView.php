@@ -64,27 +64,11 @@ class HtmlView extends BaseHtmlView {
         $this->emailUser($ebRecord, $currentBooking);
 
         // do we need to notify waiting list
-        if ($placesBefore === 0) {
-            $this->notifyWaitingList($ebRecord);
-        }
-    }
-
-    private function notifyWaitingList($ebRecord) {
-        $to = $ebRecord->wlc->getArray($ebRecord);
-        $replyTo = $ebRecord->getEventContact();
-        $noOfPlaces = $ebRecord->noOfPlaces();
-        if ($noOfPlaces < 1) {
-            throw new \RuntimeException('Email to waiting list: no places available');
-        }
-        $mailTemplate = 'notify_list_email';
-
-        $fields = helper::getAllEmailFields($ebRecord);
-        helper::sendEmailsToUserNEW($to, null, $replyTo, $mailTemplate, $fields);
-        // helper::sendEmailsToUserOLD($to, null, $replyTo, $title, $content);
+        $ebRecord->sendEmailToWaitingList($placesBefore);
     }
 
     private function emailUser($ebRecord, $currentBooking) {
-        // send user and booking contacts email
+        // send user and booking contact email
         $mailTemplate = 'remove_booking';
         $to[] = $currentBooking;
         $replyTo = $ebRecord->getEventContact();
@@ -92,7 +76,7 @@ class HtmlView extends BaseHtmlView {
         if ($ebRecord->options->email_booking === 'individual') {
             $copyTo = $ebRecord->getEventContacts();
         }
-        $fields = helper::getAllEmailFields($ebRecord);
+        $fields = $ebRecord->getAllEmailFields();
         helper::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields);
         helper::sendBookingListUpdate($ebRecord);
     }

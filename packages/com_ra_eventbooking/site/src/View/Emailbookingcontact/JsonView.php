@@ -49,7 +49,7 @@ class JsonView extends BaseJsonView {
             $copy = $replyTo;
 
             $mailTemplate = 'email_booking_contact';
-            $fields = helper::getAllEmailFields($ebRecord);
+            $fields = $ebRecord->getAllEmailFields();
             $fields['EMAILCONTENT'] = $data->emailContent;
             helper::sendEmailfromUser($to, $copy, $replyTo, $mailTemplate, $fields);
 

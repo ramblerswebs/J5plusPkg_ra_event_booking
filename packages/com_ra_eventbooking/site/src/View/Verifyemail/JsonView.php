@@ -58,7 +58,7 @@ class JsonView extends BaseJsonView {
             $replyTo->name = 'NO-REPLY';
             $replyTo->email = 'no-reply@ramblers-webs.org.uk';
 
-            $fields = helper::getAllEmailFields($ebRecord);
+            $fields = $ebRecord->getAllEmailFields();
             $fields['VERIFYCODE'] = $code;
             helper::sendEmailsToUser($to, null, $replyTo, $mailTemplate, $fields);
             // return status of booking

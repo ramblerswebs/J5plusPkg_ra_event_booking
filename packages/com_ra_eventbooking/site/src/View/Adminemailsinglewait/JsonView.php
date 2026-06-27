@@ -36,7 +36,7 @@ class JsonView extends BaseJsonView {
             $replyTo = $ebRecord->getEventContact();
             $copyTo = $replyTo;
             $mailTemplate = 'email_waiting';
-            $fields = helper::getAllEmailFields($ebRecord);
+            $fields = $ebRecord->getAllEmailFields();
             $fields['EMAILCONTENT'] = $data->emailContent;
             helper::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields);
             $feedback[] = '<h3>Email has been sent</h3>';

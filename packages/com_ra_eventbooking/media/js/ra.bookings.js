@@ -59,7 +59,7 @@ ra.bookings = function (tag, ewid, ew, ics) {
     };
     this.displayOptions = function (results) {
         if (results.data === null) {
-            this.elements.message.innerHTML = "You do not need to book for this walk/event";
+            this.elements.message.innerHTML = "Whoops: something went wrong, no booking info found for this walk/event";
             return;
         }
         this.elements.message.innerHTML = "<b>Booking is required for this walk/event</b>";

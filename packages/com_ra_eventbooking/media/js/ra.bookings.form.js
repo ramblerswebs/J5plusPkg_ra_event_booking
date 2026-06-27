@@ -393,7 +393,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
                 if (this.user.canEdit && this.evb.noAttendees() > 0) {
                     var comment = document.createElement('div');
                     comment.style.color = '#8A2716';
-                    comment.innerHTML = "You are logged on with Booking Contact access and have additional options.";
+                    comment.innerHTML = "<b>You are logged on with Booking Contact access and have additional options.</b>";
                     tag.appendChild(comment);
                     var email = document.createElement("div");
                     email.innerHTML = "<i>Email booking list/waiting list to me&nbsp;&nbsp;</i>";

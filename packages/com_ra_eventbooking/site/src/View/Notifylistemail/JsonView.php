@@ -40,7 +40,7 @@ class JsonView extends BaseJsonView {
                 if ($noOfPlaces < 1) {
                     throw new \RuntimeException('Email to waiting list: no places available');
                 }
-                $fields = helper::getAllEmailFields($ebRecord);
+                $fields = $ebRecord->getAllEmailFields();
                 helper::sendEmailsToUser($to, null, $replyTo, $mailtemplate, $fields);
             }
             $record = (object) [

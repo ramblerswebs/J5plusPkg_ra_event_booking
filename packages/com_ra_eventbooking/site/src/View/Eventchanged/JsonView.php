@@ -47,7 +47,7 @@ class JsonView extends BaseJsonView {
             $replyTo = $ebRecord->getEventContact();
 
             $mailtemplate = 'event_changed';
-            $fields = helper::getAllEmailFields($ebRecord);
+            $fields = $ebRecord->getAllEmailFields();
             helper::sendEmailsToUser($to, null, $replyTo, $mailtemplate, $fields, $attach);
             $record = (object) [
                         'feedback' => $feedback];

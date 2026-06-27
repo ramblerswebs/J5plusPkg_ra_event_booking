@@ -69,7 +69,7 @@ class JsonView extends BaseJsonView {
             }
             $copyTo = null;
 
-            $fields = helper::getAllEmailFields($ebRecord);
+            $fields = $ebRecord->getAllEmailFields();
             helper::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields);
             if ($ebRecord->options->email_booking === 'list') {
                 if ($ebRecord->options->email_waiting) {

@@ -41,11 +41,13 @@ class JsonView extends BaseJsonView {
             $ewid = $data->ewid;
 
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
+            $placesBefore = $ebRecord->noOfPlaces();
 
             $ebRecord->removeBooking($md5Email);
             $ebRecord->updateDatabase('Booking');
             $feedback[] = '<h3>The booking for this event has been removed</h3>';
-
+            // do we need to notify waiting list
+            $ebRecord->sendEmailToWaitingList($placesBefore);
             // return status of booking
             $record = (object) [
                         'feedback' => $feedback

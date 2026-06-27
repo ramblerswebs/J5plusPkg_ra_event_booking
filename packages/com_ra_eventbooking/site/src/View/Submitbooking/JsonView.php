@@ -68,6 +68,7 @@ class JsonView extends BaseJsonView {
             if ($ebRecord === null) {
                 throw new \RuntimeException('Invalid input: event not found');
             }
+            //   $placesBefore = $ebRecord->noOfPlaces();
             $guest = $ebRecord->options->guest;
             $maxattendees = $ebRecord->options->maxattendees;
             $maxguestattendees = $ebRecord->options->maxguestattendees;
@@ -92,6 +93,10 @@ class JsonView extends BaseJsonView {
                 $feedback[] = '<h3>You have been booked on this event</h3><p>We have sent you a confirmation email</p>';
             } else {
                 $feedback[] = '<h3>Your booking for this event has been removed/cancelled</h3>';
+                // do we need to notify waiting list
+                //  if ($placesBefore === 0) {
+                //     $this->notifyWaitingList($ebRecord);
+                // }
             }
 
             $isWaiting = $ebRecord->wlc->isWaiting($email);
@@ -117,7 +122,7 @@ class JsonView extends BaseJsonView {
 
     private function emailUserBooking($ebRecord, $currentBooking, $attach) {
 
-        $ewid = $ebRecord->event_id;
+        // $ewid = $ebRecord->event_id;
         $email = $currentBooking->email;
         $to[] = $currentBooking;
         $replyTo = $ebRecord->getEventContact();
@@ -125,7 +130,7 @@ class JsonView extends BaseJsonView {
         if ($ebRecord->options->email_booking === 'individual') {
             $copyTo = $ebRecord->getEventContacts();
         }
-        $fields = helper::getAllEmailFields($ebRecord, md5($email));
+        $fields = $ebRecord->getAllEmailFields(md5($email));
         helper::sendEmailsToUser($to, $copyTo, $replyTo, 'new_booking', $fields, $attach);
         helper::sendBookingListUpdate($ebRecord);
     }
@@ -140,7 +145,7 @@ class JsonView extends BaseJsonView {
             $copyTo = $ebRecord->getEventContacts();
         }
 
-        $fields = helper::getAllEmailFields($ebRecord);
+        $fields = $ebRecord->getAllEmailFields();
         helper::sendEmailsToUser($to, $copyTo, $replyTo, $mailTemplate, $fields);
         helper::sendBookingListUpdate($ebRecord);
     }

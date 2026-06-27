@@ -52,7 +52,7 @@ class JsonView extends BaseJsonView {
 
 
             $mailTemplate = 'email_booking_list';
-            $fields = helper::getAllEmailFields($ebRecord);
+            $fields = $ebRecord->getAllEmailFields();
             $fields['BOOKLIST'] = $bookinglist;
             $fields['WAITINGLIST'] = $waitinglist;
             $fields['REASON'] = "";
