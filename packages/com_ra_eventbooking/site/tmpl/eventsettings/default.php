@@ -18,10 +18,6 @@ use \Joomla\CMS\Layout\LayoutHelper;
 use \Joomla\CMS\Session\Session;
 use \Joomla\CMS\User\UserFactoryInterface;
 
-HTMLHelper::_('bootstrap.tooltip');
-HTMLHelper::_('behavior.multiselect');
-HTMLHelper::_('formbehavior.chosen', 'select');
-
 $user = Factory::getApplication()->getIdentity();
 $userId = $user->get('id');
 $listOrder = $this->state->get('list.ordering');
@@ -119,7 +115,6 @@ $wa->useStyle('com_ra_eventbooking.list');
                         </td>
 
                         <?php
-                       
                         $event = $item->event_data;
                         if ($event === "" OR $event === null) {
                             echo '<td>Not set</td>';
@@ -155,7 +150,7 @@ $wa->useStyle('com_ra_eventbooking.list');
            class="btn btn-success btn-small link-button mintcake"><i
                 class="icon-plus"></i>
             <?php echo Text::_('COM_RA_EVENTBOOKING_ADD_ITEM'); ?></a>
-    <?php endif; ?>
+        <?php endif; ?>
 
     <input type="hidden" name="task" value=""/>
     <input type="hidden" name="boxchecked" value="0"/>
