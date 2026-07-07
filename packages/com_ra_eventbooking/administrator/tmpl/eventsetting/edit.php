@@ -10,16 +10,16 @@
 defined('_JEXEC') or die;
 
 use \Joomla\CMS\HTML\HTMLHelper;
-use \Joomla\CMS\Factory;
-use \Joomla\CMS\Uri\Uri;
+//use \Joomla\CMS\Factory;
+//use \Joomla\CMS\Uri\Uri;
 use \Joomla\CMS\Router\Route;
 use \Joomla\CMS\Language\Text;
-use Joomla\CMS\Layout\LayoutHelper;
+
+//use Joomla\CMS\Layout\LayoutHelper;
 
 $wa = $this->document->getWebAssetManager();
 $wa->useScript('keepalive')
         ->useScript('form.validate');
-HTMLHelper::_('bootstrap.tooltip');
 ?>
 
 <form
@@ -78,12 +78,12 @@ HTMLHelper::_('bootstrap.tooltip');
 
     <input type="hidden" name="jform[state]" value="<?php echo isset($this->item->state) ? $this->item->state : ''; ?>" />
 
-    <?php echo $this->form->renderField('modified_by'); ?>
+<?php echo $this->form->renderField('modified_by'); ?>
 
 
-    <?php echo HTMLHelper::_('uitab.endTabSet'); ?>
+<?php echo HTMLHelper::_('uitab.endTabSet'); ?>
 
     <input type="hidden" name="task" value=""/>
-    <?php echo HTMLHelper::_('form.token'); ?>
+<?php echo HTMLHelper::_('form.token'); ?>
 
 </form>

@@ -13,7 +13,7 @@ namespace Ramblers\Component\Ra_eventbooking\Administrator\Table;
 // No direct access
 defined('_JEXEC') or die;
 
-use \Joomla\Utilities\ArrayHelper;
+//use \Joomla\Utilities\ArrayHelper;
 use \Joomla\CMS\Factory;
 use \Joomla\CMS\Access\Access;
 use \Joomla\CMS\Language\Text;
@@ -22,11 +22,10 @@ use \Joomla\CMS\Versioning\VersionableTableInterface;
 use Joomla\CMS\Tag\TaggableTableInterface;
 use Joomla\CMS\Tag\TaggableTableTrait;
 use \Joomla\Database\DatabaseDriver;
-use \Joomla\CMS\Filter\OutputFilter;
-use \Joomla\CMS\Filesystem\File;
 use \Joomla\Registry\Registry;
-use \Ramblers\Component\Ra_eventbooking\Administrator\Helper\Ra_eventbookingHelper;
-use \Joomla\CMS\Helper\ContentHelper;
+
+//use \Ramblers\Component\Ra_eventbooking\Administrator\Helper\Ra_eventbookingHelper;
+//use \Joomla\CMS\Helper\ContentHelper;
 
 /**
  * Eventsetting table
@@ -55,7 +54,7 @@ class EventsettingTable extends Table implements VersionableTableInterface, Tagg
      */
     private function isUnique($field) {
         $db = $this->_db;
-        $query = $db->getQuery(true);
+        $query = $db->createQuery();
 
         $query
                 ->select($db->quoteName($field))
@@ -112,15 +111,15 @@ class EventsettingTable extends Table implements VersionableTableInterface, Tagg
         $task = $input->getString('task', '');
 
         if ($array['id'] == 0 && empty($array['modified_by'])) {
-            $array['modified_by'] = Factory::getUser()->id;
+            $array['modified_by'] = Factory::getApplication()->getIdentity()->id;
         }
 
         if ($task == 'apply' || $task == 'save') {
-            $array['modified_by'] = Factory::getUser()->id;
+            $array['modified_by'] = Factory::getApplication()->getIdentity()->id;
         }
 
         if ($array['id'] == 0 && empty($array['created_by'])) {
-            $array['created_by'] = Factory::getUser()->id;
+            $array['created_by'] = Factory::getApplication()->getIdentity()->id;
         }
 
         // Support for checkbox field: payment_required

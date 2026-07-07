@@ -151,7 +151,7 @@ class JsonView extends BaseJsonView {
     }
 
     private static function checkInput($guest, $maxattendees, $maxguestattendees, $bookingData) {
-        $juser = Factory::getUser($bookingData->id);
+        $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($bookingData->id);
         $canEdit = helper::canEdit();
         if (!$canEdit) {
             if ($juser->id !== $bookingData->id) {

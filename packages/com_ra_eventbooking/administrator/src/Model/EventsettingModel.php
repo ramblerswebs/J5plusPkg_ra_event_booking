@@ -18,9 +18,6 @@ use \Joomla\CMS\Factory;
 use \Joomla\CMS\Language\Text;
 use \Joomla\CMS\Plugin\PluginHelper;
 use \Joomla\CMS\MVC\Model\AdminModel;
-//use \Joomla\CMS\Helper\TagsHelper;
-//use \Joomla\CMS\Filter\OutputFilter;
-//use \Joomla\CMS\Event\Model;
 use Joomla\Registry\Registry;
 use Joomla\CMS\Event\AbstractEvent;
 use Joomla\CMS\Component\ComponentHelper;
@@ -114,22 +111,22 @@ class EventsettingModel extends AdminModel {
      */
     #[\Override]
     protected function loadFormData() {
-    $data = Factory::getApplication()->getUserState(
-        'com_ra_eventbooking.edit.eventsetting.data',
-        []
-    );
-    
-    if (empty($data)) {
-        $data = $this->getItem();
-        if ($data) {
-            // Ensure params is Registry
-            $registry = new \Joomla\Registry\Registry($data->params);
-            $data->params = $registry;
+        $data = Factory::getApplication()->getUserState(
+                'com_ra_eventbooking.edit.eventsetting.data',
+                []
+        );
+
+        if (empty($data)) {
+            $data = $this->getItem();
+            if ($data) {
+                // Ensure params is Registry
+                $registry = new \Joomla\Registry\Registry($data->params);
+                $data->params = $registry;
+            }
         }
+
+        return $data;
     }
-    
-    return $data;
-}
 
     /**
      * Method to get a single record.
@@ -254,12 +251,11 @@ class EventsettingModel extends AdminModel {
      */
     #[\Override]
     protected function prepareTable($table) {
-        jimport('joomla.filter.output');
 
         if (empty($table->id)) {
 // Set ordering to the last item if not set
             if (@$table->ordering === '') {
-                $db = $this->getDbo();
+                $db = $this->getDatabase();
                 $db->setQuery('SELECT MAX(ordering) FROM #__ra_event_bookings');
                 $max = $db->loadResult();
                 $table->ordering = $max + 1;

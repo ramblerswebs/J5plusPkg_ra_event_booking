@@ -14,6 +14,7 @@ namespace Ramblers\Component\Ra_eventbooking\Administrator\Field;
 defined('_JEXEC') or die('Restricted access');
 
 use Joomla\CMS\Factory;
+use Joomla\CMS\User\UserFactoryInterface;
 use \Joomla\CMS\Form\FormField;
 use Joomla\Utilities\ArrayHelper;
 use Joomla\CMS\Component\ComponentHelper;
@@ -49,7 +50,7 @@ class BookingcontactField extends FormField {
             }
         }
 
-        $juser = Factory::getUser($id);
+        $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($id);
         $options = $this->getOptions();
         $html = '<select class="form-select" name="' . $this->name . '" value="' . $this->value . '" >';
         if (!$this->configMode) {
@@ -73,7 +74,7 @@ class BookingcontactField extends FormField {
 
     protected function getOptions() {
         $db = $this->getDatabase();
-        $query = $db->getQuery(true);
+        $query = $db->createQuery();
         $query->select('*')
                 ->from($db->quoteName('#__users'));
         $db->setQuery($query);
@@ -89,7 +90,7 @@ class BookingcontactField extends FormField {
 
     protected function canEdit($user) {
         if ($user->id > 0) {
-            $juser = Factory::getUser($user->id);
+            $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($user->id);
             return $juser->authorise('core.edit', 'com_ra_eventbooking');
         }
         return false;

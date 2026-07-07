@@ -29,7 +29,7 @@ class JsonView extends BaseJsonView {
     public function display($tpl = null) {
         try {
             $feedback = [];
-            $juser = Factory::getUser();
+            $juser = Factory::getApplication()->getIdentity();
             $canEdit = false;
             if ($juser->id > 0) {
                 $canEdit = $juser->authorise('core.edit', 'com_ra_eventbooking');
@@ -40,7 +40,7 @@ class JsonView extends BaseJsonView {
             $bookinglist = $ebRecord->getBookingTable($ebRecord->options->payment_required, $canEdit);
             $waitinglist = $ebRecord->getWaitingTable($canEdit);
 
-            $juser = Factory::getUser();
+            $juser = Factory::getApplication()->getIdentity();
             $to = [helper::getSendTo($juser->name, $juser->email)];
 
             $replyTo = null;

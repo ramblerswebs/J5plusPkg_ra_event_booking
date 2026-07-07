@@ -17,6 +17,7 @@ use \Ramblers\Component\Ra_eventbooking\Site\Helper\Ra_eventbookingHelper as hel
 use Joomla\CMS\Response\JsonResponse;
 use Joomla\CMS\MVC\View\JsonView as BaseJsonView;
 use Joomla\CMS\Factory;
+use Joomla\CMS\User\UserFactoryInterface;
 
 // use Joomla\CMS\Component\ComponentHelper;
 // No direct access
@@ -34,7 +35,7 @@ class JsonView extends BaseJsonView {
             $ebRecord = helper::getEVBrecord($ewid, "Internal");
             $to = $ebRecord->getEventContact();
             if ($from->id > 0) {
-                $juser = Factory::getUser($from->id);
+                $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($from->id);
                 $name = $juser->name;
                 $email = $juser->email;
             } else {

@@ -51,7 +51,6 @@ class EventsettingsModel extends ListModel {
                 'event_id', 'a.event_id',
                 'creation_date', 'a.creation_date',
                 'creation_date.from', 'creation_date.to',
-             
             );
         }
 
@@ -118,8 +117,8 @@ class EventsettingsModel extends ListModel {
      */
     protected function getListQuery() {
         // Create a new query object.
-        $db = $this->getDbo();
-        $query = $db->getQuery(true);
+        $db = $this->getDatabase();
+        $query = $db->createQuery();
 
         // Select the required fields from the table.
         $query->select(
@@ -132,7 +131,7 @@ class EventsettingsModel extends ListModel {
         // Join over the users for the checked out user
         $query->select('uc.name AS uEditor');
         $query->join('LEFT', '#__users AS uc ON uc.id=a.checked_out');
-  
+
         // Join over the user field 'modified_by'
         $query->select('`modified_by`.name AS `modified_by`');
         $query->join('LEFT', '#__users AS `modified_by` ON `modified_by`.id = a.`modified_by`');

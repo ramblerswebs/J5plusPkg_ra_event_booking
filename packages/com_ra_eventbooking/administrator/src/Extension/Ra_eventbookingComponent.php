@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @version    CVS: 1.0.0
  * @package    Com_Ra_eventbooking
@@ -9,7 +10,9 @@
 
 namespace Ramblers\Component\Ra_eventbooking\Administrator\Extension;
 
-defined('JPATH_PLATFORM') or die;
+use Joomla\Database\DatabaseInterface;
+
+defined('_JEXEC') or die;
 
 use Ramblers\Component\Ra_eventbooking\Administrator\Service\Html\RA_EVENTBOOKING;
 use Joomla\CMS\Application\SiteApplication;
@@ -30,38 +33,37 @@ use Joomla\CMS\Categories\CategoryServiceInterface;
  *
  * @since  1.0.0
  */
-class Ra_eventbookingComponent extends MVCComponent implements RouterServiceInterface, BootableExtensionInterface, CategoryServiceInterface
-{
-	use AssociationServiceTrait;
-	use RouterServiceTrait;
-	use HTMLRegistryAwareTrait;
-	use CategoryServiceTrait, TagServiceTrait {
-		CategoryServiceTrait::getTableNameForSection insteadof TagServiceTrait;
-		CategoryServiceTrait::getStateColumnForSection insteadof TagServiceTrait;
-	}
+class Ra_eventbookingComponent extends MVCComponent implements RouterServiceInterface, BootableExtensionInterface, CategoryServiceInterface {
 
-	/** @inheritdoc  */
-	public function boot(ContainerInterface $container)
-	{
-		$db = $container->get('DatabaseDriver');
-		$this->getRegistry()->register('ra_eventbooking', new RA_EVENTBOOKING($db));
-	}
+    use AssociationServiceTrait;
+    use RouterServiceTrait;
+    use HTMLRegistryAwareTrait;
+    use CategoryServiceTrait,
+        TagServiceTrait {
+        CategoryServiceTrait::getTableNameForSection insteadof TagServiceTrait;
+        CategoryServiceTrait::getStateColumnForSection insteadof TagServiceTrait;
+    }
 
-	
-/**
- * Returns the table for the count items functions for the given section.
-	 *
-	 * @param   string    The section
-	 *
-	 * * @return  string|null
-	 *
-	 * @since   4.0.0
-	 */
-	    protected function getTableNameForSection(string $section = null)            
-	{
-	}
-	
-	/**
+    /** @inheritdoc  */
+    public function boot(ContainerInterface $container) {
+        $db = $container->get(DatabaseInterface::class);
+        $this->getRegistry()->register('ra_eventbooking', new RA_EVENTBOOKING($db));
+    }
+
+    /**
+     * Returns the table for the count items functions for the given section.
+     *
+     * @param   string    The section
+     *
+     * * @return  string|null
+     *
+     * @since   4.0.0
+     */
+    protected function getTableNameForSection(string $section = null) {
+        
+    }
+
+    /**
      * Adds Count Items for Category Manager.
      *
      * @param   \stdClass[]  $items    The category objects
@@ -71,7 +73,7 @@ class Ra_eventbookingComponent extends MVCComponent implements RouterServiceInte
      *
      * @since   4.0.0
      */
-    public function countItems(array $items, string $section)
-    {
-	}
+    public function countItems(array $items, string $section) {
+        
+    }
 }
