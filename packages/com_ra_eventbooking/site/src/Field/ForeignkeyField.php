@@ -16,281 +16,245 @@ use \Joomla\CMS\Factory;
 use \Joomla\CMS\HTML\HTMLHelper;
 use \Joomla\CMS\Language\Text;
 use \Joomla\CMS\Form\Field\ListField;
+use \Joomla\Database\DatabaseInterface;
 
 /**
  * Supports a value from an external table
  *
  * @since  1.0.0
  */
-class ForeignKeyField extends ListField
-{
-	/**
-	 * The form field type.
-	 *
-	 * @var    string
-	 * @since  1.0.0
-	 */
-	protected $type = 'foreignkey';
+class ForeignKeyField extends ListField {
 
-	protected $layout = 'joomla.form.field.list-fancy-select';
+    /**
+     * The form field type.
+     *
+     * @var    string
+     * @since  1.0.0
+     */
+    protected $type = 'foreignkey';
+    protected $layout = 'joomla.form.field.list-fancy-select';
 
-	/**
-	 * The translate.
-	 *
-	 * @var    boolean
-	 * @since  1.0.0
-	 */
-	protected $translate = true;
+    /**
+     * The translate.
+     *
+     * @var    boolean
+     * @since  1.0.0
+     */
+    protected $translate = true;
+    protected $header = false;
+    private $input_type;
+    private $table;
+    private $key_field;
+    private $value_field;
+    private $option_key_field;
+    private $option_value_field;
+    private $condition;
 
-	protected $header = false;
+    /**
+     * Method to get the field input markup.
+     *
+     * @return  string  The field input markup.
+     *
+     * @since   1.0.0
+     */
+    protected function processQuery() {
+        // Type of input the field shows
+        $this->input_type = $this->getAttribute('input_type');
 
-	private $input_type;
+        // Database Table
+        $this->table = $this->getAttribute('table');
 
-	private $table;
+        // The field that the field will save on the database
+        $this->key_field = (string) $this->getAttribute('key_field');
 
-	private $key_field;
+        // The column that the field shows in the input
+        $this->value_field = (string) $this->getAttribute('value_field');
 
-	private $value_field;
+        // The option field that the field will save on the database
+        $this->option_key_field = (string) $this->getAttribute('option_key_field');
 
-	private $option_key_field;
+        // The option value that the field shows in the input
+        $this->option_value_field = (string) $this->getAttribute('option_value_field');
 
-	private $option_value_field;
+        // Flag to identify if the fk_value is multiple
+        $this->value_multiple = (int) $this->getAttribute('value_multiple', 0);
 
-	private $condition;
+        $this->required = (string) $this->getAttribute('required', 0);
 
-	/**
-	 * Method to get the field input markup.
-	 *
-	 * @return  string  The field input markup.
-	 *
-	 * @since   1.0.0
-	 */
-	protected function processQuery()
-	{
-		// Type of input the field shows
-		$this->input_type = $this->getAttribute('input_type');
+        // Flag to identify if the fk_value hides the trashed items
+        $this->hideTrashed = (int) $this->getAttribute('hide_trashed', 0);
 
-		// Database Table
-		$this->table = $this->getAttribute('table');
+        // Flag to identify if the fk_value hides the unpublished items	
+        $this->hideUnpublished = (int) $this->getAttribute('hide_unpublished', 0);
 
-		// The field that the field will save on the database
-		$this->key_field = (string) $this->getAttribute('key_field');
+        // Flag to identify if the fk_value hides the published items
+        $this->hidePublished = (int) $this->getAttribute('hide_published', 0);
 
-		// The column that the field shows in the input
-		$this->value_field = (string) $this->getAttribute('value_field');
+        // Flag to identify if the fk_value hides the archived items
+        $this->hideArchived = (int) $this->getAttribute('hide_archived', 0);
 
-		// The option field that the field will save on the database
-		$this->option_key_field = (string) $this->getAttribute('option_key_field');
+        // Flag to identify if the fk has default order
+        $this->fk_ordering = (string) $this->getAttribute('fk_ordering');
 
-		// The option value that the field shows in the input
-		$this->option_value_field = (string) $this->getAttribute('option_value_field');
+        // The where SQL for foreignkey
+        $this->condition = (string) $this->getAttribute('condition');
 
-		// Flag to identify if the fk_value is multiple
-		$this->value_multiple = (int) $this->getAttribute('value_multiple', 0);
+        // Flag for translate options
+        $this->translate = (bool) $this->getAttribute('translate');
 
-		$this->required = (string) $this->getAttribute('required', 0);
+        // Initialize variables.
+        $html = '';
+        $fk_value = '';
 
-		// Flag to identify if the fk_value hides the trashed items
-		$this->hideTrashed = (int) $this->getAttribute('hide_trashed', 0);
-		
-		// Flag to identify if the fk_value hides the unpublished items	
-		$this->hideUnpublished = (int) $this->getAttribute('hide_unpublished', 0);
-				
-		// Flag to identify if the fk_value hides the published items
-		$this->hidePublished = (int) $this->getAttribute('hide_published', 0);
+        // Load all the field options
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->createQuery();
 
-		// Flag to identify if the fk_value hides the archived items
-		$this->hideArchived = (int) $this->getAttribute('hide_archived', 0);
+        // Support for multiple fields on fk_values
+        if ($this->value_multiple == 1) {
+            // Get the fields for multiple value
+            $this->value_fields = (string) $this->getAttribute('value_field_multiple');
+            $this->value_fields = explode(',', $this->value_fields);
+            $this->separator = (string) $this->getAttribute('separator');
 
-		// Flag to identify if the fk has default order
-		$this->fk_ordering = (string) $this->getAttribute('fk_ordering');
+            $fk_value = ' CONCAT(';
 
-		// The where SQL for foreignkey
-		$this->condition = (string) $this->getAttribute('condition');
+            foreach ($this->value_fields as $field) {
+                $fk_value .= $db->quoteName($field) . ', \'' . $this->separator . '\', ';
+            }
 
-		// Flag for translate options
-		$this->translate = (bool) $this->getAttribute('translate');
+            $fk_value = substr($fk_value, 0, -(strlen($this->separator) + 6));
+            $fk_value .= ') AS ' . $db->quoteName($this->value_field);
+        } else {
+            $fk_value = $db->quoteName($this->value_field);
+        }
 
-		// Initialize variables.
-		$html     = '';
-		$fk_value = '';
+        $query
+                ->select(
+                        array(
+                            $db->quoteName($this->key_field),
+                            $fk_value
+                        )
+                )
+                ->from($this->table);
 
-		// Load all the field options
-		$db    = Factory::getContainer()->get('DatabaseDriver');
-		$query = $db->getQuery(true);
+        if ($this->hideTrashed) {
+            $query->where($db->quoteName('state') . ' != -2');
+        }
 
-		// Support for multiple fields on fk_values
-		if ($this->value_multiple == 1)
-		{
-			// Get the fields for multiple value
-			$this->value_fields = (string) $this->getAttribute('value_field_multiple');
-			$this->value_fields = explode(',', $this->value_fields);
-			$this->separator    = (string) $this->getAttribute('separator');
+        if ($this->hideUnpublished) {
+            $query->where($db->quoteName('state') . ' != 0');
+        }
 
-			$fk_value = ' CONCAT(';
+        if ($this->hidePublished) {
+            $query->where($db->quoteName('state') . ' != 1');
+        }
 
-			foreach ($this->value_fields as $field)
-			{
-				$fk_value .= $db->quoteName($field) . ', \'' . $this->separator . '\', ';
-			}
+        if ($this->hideArchived) {
+            $query->where($db->quoteName('state') . ' != 2');
+        }
 
-			$fk_value = substr($fk_value, 0, -(strlen($this->separator) + 6));
-			$fk_value .= ') AS ' . $db->quoteName($this->value_field);
-		}
-		else
-		{
-			$fk_value = $db->quoteName($this->value_field);
-		}
+        if ($this->fk_ordering) {
+            $query->order($this->fk_ordering);
+        }
 
-		$query
-			->select(
-				array(
-					$db->quoteName($this->key_field),
-					$fk_value
-				)
-			)
-			->from($this->table);
+        if ($this->condition) {
+            $query->where($this->condition);
+        }
 
-		if ($this->hideTrashed)
-		{
-			$query->where($db->quoteName('state') . ' != -2');
-		}
 
-		if ($this->hideUnpublished)
-		{
-			$query->where($db->quoteName('state') . ' != 0');
-		}
 
-		if ($this->hidePublished)
-		{
-			$query->where($db->quoteName('state') . ' != 1');
-		}
+        return $query;
+    }
 
-		if ($this->hideArchived)
-		{
-			$query->where($db->quoteName('state') . ' != 2');
-		}
+    /**
+     * Method to get the field input for a foreignkey field.
+     *
+     * @return  string  The field input.
+     *
+     * @since   1.0.0
+     */
+    protected function getInput() {
+        $data = $this->getLayoutData();
 
-		if ($this->fk_ordering)
-		{
-			$query->order($this->fk_ordering);
-		}
+        if (!\is_array($this->value) && !empty($this->value)) {
+            if (\is_object($this->value)) {
+                $this->value = get_object_vars($this->value);
+            }
 
-		if($this->condition)
-		{
-			$query->where($this->condition);
-		}
+            // String in format 2,5,4
+            if (\is_string($this->value)) {
+                $this->value = explode(',', $this->value);
+            }
 
-		
+            // Integer is given
+            if (\is_int($this->value)) {
+                $this->value = array($this->value);
+            }
 
-		return $query;
-	}
+            $data['value'] = $this->value;
+        }
 
-	/**
-	 * Method to get the field input for a foreignkey field.
-	 *
-	 * @return  string  The field input.
-	 *
-	 * @since   1.0.0
-	 */
-	protected function getInput()
-	{
-		$data = $this->getLayoutData();
+        $data['options'] = $this->getOptions();
 
-		if (!\is_array($this->value) && !empty($this->value))
-		{
-			if (\is_object($this->value))
-			{
-				$this->value = get_object_vars($this->value);
-			}
+        return $this->getRenderer($this->layout)->render($data);
+    }
 
-			// String in format 2,5,4
-			if (\is_string($this->value))
-			{
-				$this->value = explode(',', $this->value);
-			}
+    /**
+     * Method to get the field options.
+     *
+     * @return  array  The field option objects.
+     *
+     * @since   1.0.0
+     */
+    protected function getOptions() {
+        $options = array();
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        try {
+            $db->setQuery($this->processQuery());
+            $results = $db->loadObjectList();
+        } catch (ExecutionFailureException $e) {
+            Factory::getApplication()->enqueueMessage(Text::_('JERROR_AN_ERROR_HAS_OCCURRED'), 'error');
+        }
 
-			// Integer is given
-			if (\is_int($this->value))
-			{
-				$this->value = array($this->value);
-			}
+        // Add header.
+        if (!empty($this->header)) {
+            $options[] = (object) ["value" => '', "text" => Text::_($this->header)];
+        }
 
-			$data['value'] = $this->value;
-		}
+        if (!empty($this->option_value_field) || !empty($this->option_key_field)) {
+            $options[] = (object) ["value" => $this->option_key_field, "text" => Text::_($this->option_value_field)];
+        }
 
-		$data['options']       = $this->getOptions();
-		
-		return $this->getRenderer($this->layout)->render($data);
-	}
+        // Build the field options.
+        if (!empty($results)) {
+            foreach ($results as $item) {
+                $options[] = (object) [
+                            "value" => $item->{$this->key_field},
+                            "text" => $this->translate == true ? Text::_($item->{$this->value_field}) : $item->{$this->value_field}
+                ];
+            }
+        }
 
-	/**
-	 * Method to get the field options.
-	 *
-	 * @return  array  The field option objects.
-	 *
-	 * @since   1.0.0
-	 */
-	protected function getOptions()
-	{
-		$options = array();
-		$db      = Factory::getContainer()->get('DatabaseDriver');
-		try
-		{
-			$db->setQuery($this->processQuery());
-			$results = $db->loadObjectList();
-		}
-		catch (ExecutionFailureException $e)
-		{
-			Factory::getApplication()->enqueueMessage(Text::_('JERROR_AN_ERROR_HAS_OCCURRED'), 'error');
-		}
+        // Merge any additional options in the XML definition.
+        $options = array_merge(parent::getOptions(), $options);
 
-		// Add header.
-		if (!empty($this->header))
-		{
-			$options[] = (object) ["value" => '', "text" => Text::_($this->header)];
-		}
+        return $options;
+    }
 
-		if(!empty($this->option_value_field) || !empty($this->option_key_field))
-		{
-			$options[] = (object) ["value" => $this->option_key_field, "text" => Text::_($this->option_value_field)];
-		}
-
-		// Build the field options.
-		if (!empty($results))
-		{
-			foreach ($results as $item)
-			{
-				$options[] = (object) [
-									"value"     => $item->{$this->key_field},
-									"text"      => $this->translate == true ? Text::_($item->{$this->value_field}) : $item->{$this->value_field}
-								];
-			}
-		}
-
-		// Merge any additional options in the XML definition.
-		$options = array_merge(parent::getOptions(), $options);
-
-		return $options;
-	}
-
-	/**
-	 * Wrapper method for getting attributes from the form element
-	 *
-	 * @param   string  $attr_name  Attribute name
-	 * @param   mixed   $default    Optional value to return if attribute not found
-	 *
-	 * @return mixed The value of the attribute if it exists, null otherwise
-	 */
-	public function getAttribute($attr_name, $default = null)
-	{
-		if (!empty($this->element[$attr_name]))
-		{
-			return $this->element[$attr_name];
-		}
-		else
-		{
-			return $default;
-		}
-	}
+    /**
+     * Wrapper method for getting attributes from the form element
+     *
+     * @param   string  $attr_name  Attribute name
+     * @param   mixed   $default    Optional value to return if attribute not found
+     *
+     * @return mixed The value of the attribute if it exists, null otherwise
+     */
+    public function getAttribute($attr_name, $default = null) {
+        if (!empty($this->element[$attr_name])) {
+            return $this->element[$attr_name];
+        } else {
+            return $default;
+        }
+    }
 }

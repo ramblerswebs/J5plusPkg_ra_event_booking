@@ -13,6 +13,7 @@ namespace Ramblers\Component\Ra_eventbooking\Administrator\Field;
 defined('JPATH_BASE') or die;
 
 use \Joomla\CMS\Factory;
+use \Joomla\Database\DatabaseInterface;
 use \Joomla\CMS\HTML\HTMLHelper;
 use \Joomla\CMS\Language\Text;
 use \Joomla\CMS\Form\Field\ListField;
@@ -117,8 +118,8 @@ use \Joomla\CMS\Form\Field\ListField;
 		$fk_value = '';
 
 		// Load all the field options
-		$db    = Factory::getContainer()->get('DatabaseDriver');
-		$query = $db->getQuery(true);
+		$db    = Factory::getContainer()->get(DatabaseInterface::class);
+		$query = $db->createQuery();
 
 		// Support for multiple fields on fk_values
 		if ($this->value_multiple == 1)
@@ -235,7 +236,7 @@ use \Joomla\CMS\Form\Field\ListField;
 	protected function getOptions()
 	{
 		$options = array();
-		$db    = Factory::getContainer()->get('DatabaseDriver');
+		$db    = Factory::getContainer()->get(DatabaseInterface::class);
 		try
 		{
 			$db->setQuery($this->processQuery());

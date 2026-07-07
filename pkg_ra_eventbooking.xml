@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<extension type="package" version="2.5" method="upgrade">
+<extension type="package" version="5.0" method="upgrade">
 	<name>Ramblers Event Booking</name>
 	<author>Chris Vaughan</author>
-	<creationDate>26 March 2026</creationDate>
+	<creationDate>3 July 2026</creationDate>
 	<copyright>Copyright (C) 2026 by Chris Vaughan</copyright>
 	<license>GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html</license>
 	<packagename>ra_eventbooking</packagename>
-	<version>1.0.5</version>
-	<url></url>
+	<version>1.0.6</version>
 	<packager>Chris Vaughan</packager>
-	<packagerurl></packagerurl>
-	<description>Ramblers Event Booking successfully installed!&lt;br /&gt;&lt;br /&gt;&lt;div&gt;This package contains all extensions constituting the Ramblers Event Booking functionality. .&lt;/div&gt;&lt;br /&gt;&lt;div&gt;&lt;em&gt;If you have any questions or problems, please visit the &lt;a href='https:www.ramblers-webs.org.uk'&gt;&lt;/a&gt;.&lt;br /&gt;In case you want to uninstall Ramblers Event Booking, please use the Package to uninstall all extensions at once!&lt;br /&gt;Ramblers Event Booking is published under the &lt;a target='_blank' title='GNU General Public License' href='http://www.gnu.org/copyleft/gpl.html'&gt;GNU General Public License&lt;/a&gt;.&lt;/div&gt;</description>
+	<packagerurl>https://www.ramblers-webs.org.uk</packagerurl>
+	<description>Ramblers Event Booking successfully installed!&lt;br /&gt;&lt;br /&gt;&lt;div&gt;This package contains all extensions constituting the Ramblers Event Booking functionality.&lt;/div&gt;&lt;br /&gt;&lt;div&gt;&lt;em&gt;If you have any questions or problems, please visit the &lt;a href='https://www.ramblers-webs.org.uk'&gt;https://www.ramblers-webs.org.uk&lt;/a&gt;.&lt;br /&gt;In case you want to uninstall Ramblers Event Booking, please use the Package to uninstall all extensions at once!&lt;br /&gt;Ramblers Event Booking is published under the &lt;a target='_blank' title='GNU General Public License' href='http://www.gnu.org/copyleft/gpl.html'&gt;GNU General Public License&lt;/a&gt;.&lt;/em&gt;&lt;/div&gt;</description>
 	<files folder="packages">
 		<file type="component" id="com_ra_eventbooking">com_ra_eventbooking.zip</file>
-		<file type="plugin" id="eventbooking">plg_task_eventbooking.zip</file>
+		<file type="plugin" id="plg_task_eventbooking">plg_task_eventbooking.zip</file>
 	</files>
     <updateservers>
         <server type="extension" name="RA Event Booking Package" priority="1">https://raw.githubusercontent.com/ramblerswebs/updates/master/updates/pkg-ra-eventbooking.xml</server>

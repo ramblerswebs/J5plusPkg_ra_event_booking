@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @version    CVS: 1.0.0
  * @package    Com_Ra_eventbooking
@@ -8,10 +9,12 @@
  */
 
 namespace Ramblers\Component\Ra_eventbooking\Administrator\Helper;
+
 // No direct access
 defined('_JEXEC') or die;
 
 use \Joomla\CMS\Factory;
+use \Joomla\Database\DatabaseInterface;
 use \Joomla\CMS\Language\Text;
 use \Joomla\CMS\Object\CMSObject;
 
@@ -20,58 +23,54 @@ use \Joomla\CMS\Object\CMSObject;
  *
  * @since  1.0.0
  */
-class Ra_eventbookingHelper
-{
-	/**
-	 * Gets the files attached to an item
-	 *
-	 * @param   int     $pk     The item's id
-	 *
-	 * @param   string  $table  The table's name
-	 *
-	 * @param   string  $field  The field's name
-	 *
-	 * @return  array  The files
-	 */
-	public static function getFiles($pk, $table, $field)
-	{
-		$db = Factory::getContainer()->get('DatabaseDriver');
-		$query = $db->getQuery(true);
+class Ra_eventbookingHelper {
 
-		$query
-			->select($field)
-			->from($table)
-			->where('id = ' . (int) $pk);
+    /**
+     * Gets the files attached to an item
+     *
+     * @param   int     $pk     The item's id
+     *
+     * @param   string  $table  The table's name
+     *
+     * @param   string  $field  The field's name
+     *
+     * @return  array  The files
+     */
+    public static function getFiles($pk, $table, $field) {
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->createQuery();
 
-		$db->setQuery($query);
+        $query
+                ->select($field)
+                ->from($table)
+                ->where('id = ' . (int) $pk);
 
-		return explode(',', $db->loadResult());
-	}
+        $db->setQuery($query);
 
-	/**
-	 * Gets a list of the actions that can be performed.
-	 *
-	 * @return  CMSObject
-	 *
-	 * @since   1.0.0
-	 */
-	public static function getActions()
-	{
-		$user = Factory::getApplication()->getIdentity();
-		$result = new CMSObject;
+        return explode(',', $db->loadResult());
+    }
 
-		$assetName = 'com_ra_eventbooking';
+    /**
+     * Gets a list of the actions that can be performed.
+     *
+     * @return  CMSObject
+     *
+     * @since   1.0.0
+     */
+    public static function getActions() {
+        $user = Factory::getApplication()->getIdentity();
+        $result = new CMSObject;
 
-		$actions = array(
-			'core.admin', 'core.manage', 'core.create', 'core.edit', 'core.edit.own', 'core.edit.state', 'core.delete'
-		);
+        $assetName = 'com_ra_eventbooking';
 
-		foreach ($actions as $action)
-		{
-			$result->set($action, $user->authorise($action, $assetName));
-		}
+        $actions = array(
+            'core.admin', 'core.manage', 'core.create', 'core.edit', 'core.edit.own', 'core.edit.state', 'core.delete'
+        );
 
-		return $result;
-	}
+        foreach ($actions as $action) {
+            $result->set($action, $user->authorise($action, $assetName));
+        }
+
+        return $result;
+    }
 }
-

@@ -43,7 +43,7 @@ class JsonView extends BaseJsonView {
             $name = $bookingData->name;
             $email = $bookingData->email;
             if ($id > 0) {
-                $juser = Factory::getUser();
+                $juser = Factory::getApplication()->getIdentity();
                 $email = $juser->email;
                 $name = $juser->name;
             }

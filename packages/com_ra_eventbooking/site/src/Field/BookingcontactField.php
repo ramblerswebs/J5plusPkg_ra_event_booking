@@ -14,8 +14,9 @@ namespace Ramblers\Component\Ra_eventbooking\Site\Field;
 defined('_JEXEC') or die('Restricted access');
 
 use Joomla\CMS\Factory;
+use Joomla\CMS\User\UserFactoryInterface;
 use \Joomla\CMS\Form\FormField;
-use Joomla\Utilities\ArrayHelper;
+//use Joomla\Utilities\ArrayHelper;
 use Joomla\CMS\Component\ComponentHelper;
 
 /**
@@ -42,7 +43,7 @@ class BookingcontactField extends FormField {
         If ($id < 1) {
             throw new \RuntimeException('Default Booking Contact not set, set default Options');
         }
-        $juser = Factory::getUser($id);
+        $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($id);
         $options = $this->getOptions();
         $html = '<select class="form-select" name="' . $this->name . '" value="' . $this->value . '" >';
         $html .= '<option value="">Use global [' . $juser->name . ']</option>';
@@ -64,7 +65,7 @@ class BookingcontactField extends FormField {
 
     protected function getOptions() {
         $db = $this->getDatabase();
-        $query = $db->getQuery(true);
+        $query = $db->createQuery();
         $query->select('*')
                 ->from($db->quoteName('#__users'))
                 ->where($db->quoteName('block') . ' = 0');
@@ -81,7 +82,7 @@ class BookingcontactField extends FormField {
 
     protected function canEdit($user) {
         if ($user->id > 0) {
-            $juser = Factory::getUser($user->id);
+            $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($user->id);
             return $juser->authorise('core.edit', 'com_ra_eventbooking');
         }
         return false;

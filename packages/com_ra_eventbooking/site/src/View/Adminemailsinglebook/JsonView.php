@@ -17,6 +17,7 @@ use \Ramblers\Component\Ra_eventbooking\Site\Helper\Ra_eventbookingHelper as hel
 use Joomla\CMS\Response\JsonResponse;
 use Joomla\CMS\MVC\View\JsonView as BaseJsonView;
 use Joomla\CMS\Factory;
+use Joomla\CMS\User\UserFactoryInterface;
 
 // use Joomla\CMS\Component\ComponentHelper;
 // No direct access
@@ -35,7 +36,7 @@ class JsonView extends BaseJsonView {
                 throw new \RuntimeException('Unable to find user record');
             }
 
-            $replyTo = Factory::getUser($data->from->id);
+            $replyTo = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($data->from->id);
             if ($replyTo === null) {
                 throw new \RuntimeException('Unable to find sender');
             }

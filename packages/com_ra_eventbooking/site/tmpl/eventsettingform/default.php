@@ -20,7 +20,6 @@ use \Ramblers\Component\Ra_eventbooking\Site\Helper\Ra_eventbookingHelper;
 $wa = $this->document->getWebAssetManager();
 $wa->useScript('keepalive')
         ->useScript('form.validate');
-HTMLHelper::_('bootstrap.tooltip');
 
 // Load admin language file
 $lang = Factory::getLanguage();
@@ -43,7 +42,7 @@ $canEdit = Ra_eventbookingHelper::canUserEdit($this->item, $user);
         </h3>
     <?php else : ?>
         <?php if (!empty($this->item->id)): ?>
-            <h1><?php // echo Text::sprintf('COM_RA_EVENTBOOKING_EDIT_ITEM_TITLE', $this->item->id);     ?></h1>
+            <h1><?php // echo Text::sprintf('COM_RA_EVENTBOOKING_EDIT_ITEM_TITLE', $this->item->id);      ?></h1>
         <?php else: ?>
             <h1><?php echo Text::_('COM_RA_EVENTBOOKING_ADD_ITEM_TITLE'); ?></h1>
         <?php endif; ?>

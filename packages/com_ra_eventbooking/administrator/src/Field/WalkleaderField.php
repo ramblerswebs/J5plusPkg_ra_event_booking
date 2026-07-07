@@ -13,7 +13,7 @@ namespace Ramblers\Component\Ra_eventbooking\Administrator\Field;
 // Check to ensure this file is included in Joomla!
 defined('_JEXEC') or die('Restricted access');
 
-use Joomla\CMS\Factory;
+//use Joomla\CMS\Factory;
 use \Joomla\CMS\Form\FormField;
 
 /**
@@ -32,6 +32,7 @@ class WalkleaderField extends FormField {
      *
      * @return string
      */
+    #[\Override]
     protected function getInput() {
         $options = $this->getOptions();
         $html = '<select class="form-select" name="' . $this->name . '" value="' . $this->value . '" >';
@@ -47,13 +48,14 @@ class WalkleaderField extends FormField {
         return $html;
     }
 
+    #[\Override]
     protected function getLabel() {
         return parent::getLabel();
     }
 
     protected function getOptions() {
         $db = $this->getDatabase();
-        $query = $db->getQuery(true);
+        $query = $db->createQuery();
         $query->select('*')
                 ->from($db->quoteName('#__users'))
                 ->where($db->quoteName('block') . ' = 0');
@@ -71,8 +73,6 @@ class WalkleaderField extends FormField {
     protected function canBeWalkLeader($user) {
         if ($user->id > 0) {
             return true;
-         //   $juser = Factory::getUser($user->id);
-         //   return $juser->authorise('core.walkleader', 'com_ra_eventbooking');
         }
         return false;
     }

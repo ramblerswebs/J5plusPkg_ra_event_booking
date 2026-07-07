@@ -22,6 +22,8 @@ defined('_JEXEC') or die;
 
 use Joomla\CMS\Log\Log;
 use Joomla\CMS\Factory;
+use Joomla\CMS\User\UserFactoryInterface;
+use Joomla\Database\DatabaseInterface;
 use Joomla\CMS\Uri\Uri;
 //use \Joomla\CMS\MVC\Model\BaseDatabaseModel;
 use Joomla\CMS\Component\ComponentHelper;
@@ -53,8 +55,9 @@ class Ra_eventbookingHelper {
      * @return  array  The files
      */
     public static function getFiles($pk, $table, $field) {
-        $db = Factory::getContainer()->get('DatabaseDriver');
-        $query = $db->getQuery(true);
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+
+        $query = $db->createQuery();
 
         $query
                 ->select($field)
@@ -134,8 +137,8 @@ class Ra_eventbookingHelper {
     public static function getEventsWithBooking() {
         // return array of ids for active booking records
         // used by RA Library to know if booking active on an event
-        $db = Factory::getDbo();
-        $query = $db->getQuery(true);
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->createQuery();
         $names = array('event_id');
         $query->select($db->quoteName($names));
         $query->from($db->quoteName('#__ra_event_bookings'));
@@ -158,8 +161,8 @@ class Ra_eventbookingHelper {
     }
 
     public static function getEVBrecord($ewid, $mode) {
-        $db = Factory::getDbo();
-        $query = $db->getQuery(true);
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->createQuery();
         $names = array('event_id', 'booking_data', 'waiting_data', 'event_data',
             'params'
         );
@@ -177,8 +180,8 @@ class Ra_eventbookingHelper {
     }
 
     public static function getAllEVBRecords() {
-        $db = Factory::getDbo();
-        $query = $db->getQuery(true);
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->createQuery();
         $names = array('event_id', 'booking_data', 'waiting_data', 'event_data',
             'params');
         $query->select($db->quoteName($names));
@@ -206,9 +209,9 @@ class Ra_eventbookingHelper {
             default:
                 throw new \RuntimeException('App error in updateDBField');
         }
-        $db = Factory::getContainer()->get('DatabaseDriver');
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
 
-        $query = $db->getQuery(true);
+        $query = $db->createQuery();
 
         // Fields to update.
         $fields = array(
@@ -282,7 +285,7 @@ class Ra_eventbookingHelper {
         If ($id < 1) {
             throw new \RuntimeException('Default Booking Contact not set, set default Options');
         }
-        $juser = Factory::getUser($id);
+        $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($id);
         $user = (object) ['name' => $juser->name,
                     'email' => $juser->email];
         return $user;
@@ -462,7 +465,7 @@ class Ra_eventbookingHelper {
     }
 
     public static function getUserData() {
-        $juser = Factory::getUser();
+        $juser = Factory::getApplication()->getIdentity();
         $user = (object) ['id' => $juser->id,
                     'name' => $juser->name,
                     'email' => md5($juser->email),
@@ -479,7 +482,7 @@ class Ra_eventbookingHelper {
     }
 
     public static function canEdit() {
-        $juser = Factory::getUser();
+        $juser = Factory::getApplication()->getIdentity();
         if ($juser->id > 0) {
             return $juser->authorise('core.edit', 'com_ra_eventbooking');
         }
@@ -498,7 +501,7 @@ class Ra_eventbookingHelper {
 
     public static function getGlobals() {
         $globals = self::getRawGlobals();
-        $juser = Factory::getUser($globals->booking_contact_id);
+        $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($globals->booking_contact_id);
         $globals->booking_contact_name = $juser->name;
         $globals->booking_contact_md5email = md5($juser->email);
         $globals->guest = (boolean) ($globals->guest ?? false);
@@ -611,7 +614,7 @@ class evb {
                 break;
         }
 
-        $juser = Factory::getUser($options->booking_contact_id);
+        $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($options->booking_contact_id);
         $options->booking_contact_name = $juser->name;
         $options->booking_contact_md5email = md5($juser->email);
         $options->guest = (boolean) ($options->guest ?? false);
@@ -667,7 +670,7 @@ class evb {
     }
 
     public function displayBookingTable() {
-        $juser = Factory::getUser();
+        $juser = Factory::getApplication()->getIdentity();
         $canEdit = false;
         if ($juser->id > 0) {
             $canEdit = $juser->authorise('core.edit', 'com_ra_eventbooking');
@@ -695,7 +698,7 @@ class evb {
     }
 
     public function displayWaitingTable() {
-        $juser = Factory::getUser();
+        $juser = Factory::getApplication()->getIdentity();
         $canEdit = false;
         if ($juser->id > 0) {
             $canEdit = $juser->authorise('core.edit', 'com_ra_eventbooking');
@@ -725,7 +728,7 @@ class evb {
     public function getEventContact() {
         $options = $this->options;
         if ($options->booking_contact_id !== 0) {
-            $euser = Factory::getUser($options->booking_contact_id);
+            $euser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($options->booking_contact_id);
             $name = $euser->name;
             $email = $euser->email;
             $user = (object) ['name' => $name,
@@ -755,7 +758,7 @@ class evb {
     public function getWalkLeader() {
         $options = $this->options;
         if ($options->walk_leader_id !== 0) {
-            $euser = Factory::getUser($options->walk_leader_id);
+            $euser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($options->walk_leader_id);
             $name = $euser->name;
             $email = $euser->email;
             $user = (object) ['name' => $name,
@@ -938,8 +941,8 @@ class evb {
         }
         //   \updateDBField($ewid, $field, $data, $type);
 
-        $db = Factory::getContainer()->get('DatabaseDriver');
-        $query = $db->getQuery(true);
+        $db = Factory::getContainer()->get(DatabaseInterface::class);
+        $query = $db->createQuery();
         // Fields to update.
         $fields = array(
             $db->quoteName($field) . ' = :field'

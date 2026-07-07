@@ -43,7 +43,7 @@ if (!$canEdit && Factory::getApplication()->getIdentity()->authorise('core.edit.
             if ($id === 0) {
                 echo '<td>Uses Group Booking Contact</td>';
             } else {
-                $juser = Factory::getUser($id);
+                $juser = Factory::getContainer()->get(UserFactoryInterface::class)->loadUserById($id);
                 echo '<td>' . $juser->name . ' (' . $id . ')</td>';
             }
             ?>
