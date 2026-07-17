@@ -2,11 +2,11 @@
 <extension type="package" version="5.0" method="upgrade">
 	<name>Ramblers Event Booking</name>
 	<author>Chris Vaughan</author>
-	<creationDate>3 July 2026</creationDate>
+	<creationDate>17 July 2026</creationDate>
 	<copyright>Copyright (C) 2026 by Chris Vaughan</copyright>
 	<license>GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html</license>
 	<packagename>ra_eventbooking</packagename>
-	<version>1.0.6</version>
+	<version>1.0.7</version>
 	<packager>Chris Vaughan</packager>
 	<packagerurl>https://www.ramblers-webs.org.uk</packagerurl>
 	<description>Ramblers Event Booking successfully installed!&lt;br /&gt;&lt;br /&gt;&lt;div&gt;This package contains all extensions constituting the Ramblers Event Booking functionality.&lt;/div&gt;&lt;br /&gt;&lt;div&gt;&lt;em&gt;If you have any questions or problems, please visit the &lt;a href='https://www.ramblers-webs.org.uk'&gt;https://www.ramblers-webs.org.uk&lt;/a&gt;.&lt;br /&gt;In case you want to uninstall Ramblers Event Booking, please use the Package to uninstall all extensions at once!&lt;br /&gt;Ramblers Event Booking is published under the &lt;a target='_blank' title='GNU General Public License' href='http://www.gnu.org/copyleft/gpl.html'&gt;GNU General Public License&lt;/a&gt;.&lt;/em&gt;&lt;/div&gt;</description>
