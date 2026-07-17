@@ -34,7 +34,6 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         id: 0,
         name: '',
         email: '',
-        confirmEmail: '',
         telephone: '',
         md5Email: '',
         member: 'No',
@@ -145,7 +144,6 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
 
         this._name = this.input.addText(tag, 'name', "Your name:", this.bookingData, 'name', 'Who is making this booking', null);
         this._email = this.input.addEmail(tag, 'email', "Email Address:", this.bookingData, 'email', 'Contact\'s email address', null);
-        this._confirmEmail = this.input.addEmail(tag, 'email', "Confirm Email Address:", this.bookingData, 'confirmEmail', 'Confirm email address', null);
         this._telephone = this.input.addText(tag, 'telephone', "Telephone number:", this.bookingData, 'telephone', 'Contact\'s telephone/mobile number', null);
         if (this.evb.options.telephone_required) {
             ra.bookings.addTextTag(tag, 'p', '<small>Telephone number must be in one of the following formats 0xxx xxx xxxx,  0xxxx xxxxxx or  0xxxx xxxxxx</small>');
@@ -162,9 +160,6 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         this._email.addEventListener("input", function () {
             self.checkUserDetails();
         });
-        this._confirmEmail.addEventListener("input", function () {
-            self.checkUserDetails();
-        });
         this._telephone.addEventListener("input", function () {
             self.checkUserDetails();
         });
@@ -174,17 +169,14 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         var $okay = true;
         this._name.style.color = 'black';
         this._email.style.color = 'black';
-        this._confirmEmail.style.color = 'black';
         this._telephone.style.color = 'black';
 
         var name = this._name.value.trim();
         var email = this._email.value.trim();
-        var confirmEmail = this._confirmEmail.value.trim();
 
-        if (email !== confirmEmail) {
-            this.verification = {md5: '',
-                codeLength: 6};
-        }
+        //    this.verification = {md5: '',
+        //        codeLength: 6};
+
         if (name.length < 3) {
             this._name.style.color = 'red';
             $okay = false;
@@ -198,10 +190,6 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             $okay = false;
         }
         this.bookingData.md5Email = md5(email);
-        if (confirmEmail !== email) {
-            this._confirmEmail.style.color = 'red';
-            $okay = false;
-        }
 
         // Landlines: 0xxx xxx xxxx  OR  0xxxx xxxxxx
         // Mobiles:   07xxx xxxxxx
@@ -240,12 +228,14 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
         ];
         var options = {
             never: "Never",
-            session: "For this session",
-            '24hours': 'For 24 hours',
-            '1week': 'For 1 week'
+            '0': "For this session",
+            '1': 'For 24 hours',
+            '7': 'For 1 week',
+            '31': 'For 1 month',
+            '365': 'For 1 year'
         };
         var saveObj = {
-            period: 'session'
+            period: '7'
         };
 
         var md5Email = ra.cookie.read("ra-booking");
@@ -287,17 +277,9 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
                         case 'never':
                             days = -1;
                             break;
-                        case 'session':
-                            days = 0;
-                            break;
-                        case '24hours':
-                            days = 1;
-                            break;
-                        case '1week':
-                            days = 7;
-                            break;
+                        default:
+                            days = saveObj.period;
                     }
-
                     ra.cookie.create(this.bookingData.md5Email, "ra-booking", days);
                     let event = new Event("userDetailsVerified"); // 
                     event.raData = {};

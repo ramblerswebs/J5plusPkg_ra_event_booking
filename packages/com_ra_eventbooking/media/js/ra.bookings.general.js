@@ -354,6 +354,9 @@ ra.bookings.inputFields = function () {
             if (no === 1) {
                 raobject[property] = key;
             }
+            if (raobject[property] === key) {
+                option.setAttribute('selected', true);
+            }
             inputTag.appendChild(option);
         }
         inputTag.setAttribute('class', 'booking input');
@@ -489,7 +492,7 @@ ra.bookings.defaults = function (defaults) {
         var tags = [
             {parent: 'root', tag: 'h3', innerHTML: 'Global default settings'},
             {name: 'general', parent: 'root', tag: 'ul'},
-            {parent: 'general', tag: 'li', innerHTML: 'Default Booking contact'},
+            {parent: 'general', tag: 'li', innerHTML: 'Booking contact'},
             {name: 'contact', parent: 'general', tag: 'ul'},
             {name: 'type', parent: 'general', tag: 'li'},
             {name: 'total', parent: 'general', tag: 'li'},
@@ -498,7 +501,7 @@ ra.bookings.defaults = function (defaults) {
             {name: 'list', parent: 'general', tag: 'ul'},
             {name: 't2', parent: 'general', tag: 'li', innerHTML: 'Guest users'},
             {name: 'guestlist', parent: 'general', tag: 'ul'},
-            {name: 't3', parent: 'general', tag: 'li', innerHTML: 'Default closing time for bookings'},
+            {name: 't3', parent: 'general', tag: 'li', innerHTML: 'Closing time for bookings'},
             {name: 'closing', parent: 't3', tag: 'ul'}
         ];
         var elements = ra.html.generateTags(tag, tags);
@@ -603,7 +606,7 @@ ra.bookings.defaults = function (defaults) {
             out[out.length] = this.getClosingDescription(options.closingoption);
         }
 
-        if (this.payment_required !== options.payment_required) {
+        if (options.payment_requiredValue !== 'global') {
             out[out.length] = options.payment_required ? "Payment required" : "No Payment required";
         }
         if (this.maxattendees !== options.maxattendees) {

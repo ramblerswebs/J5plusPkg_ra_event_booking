@@ -516,6 +516,7 @@ class Ra_eventbookingHelper {
         $globals->send_both_contacts = (boolean) ($globals->send_both_contacts ?? false);
         $globals->send_booking_list_onclosed = (boolean) ($globals->send_booking_list_onclosed ?? false);
         $globals->walk_leader_id = (int) ($globals->walk_leader_id ?? 0);
+        // the following two fields have the values of global, yes or no
         $globals->bookingemailtextrequired = $globals->bookingemailtextrequired ?? 'no';
         $globals->payment_required = $globals->payment_required ?? 'no';
 
@@ -575,6 +576,9 @@ class evb {
         // to pass to js code, never store in this state
         $options->bookingemailtextrequired = $options->bookingemailtextrequired ?? 'no';
         $options->payment_required = $options->payment_required ?? 'no';
+        // save text value of these two fields for js code summary
+        $options->bookingemailtextrequiredValue = $options->bookingemailtextrequired ?? 'no';
+        $options->payment_requiredValue = $options->payment_required ?? 'no';
         $options->bookingemailtext = $options->bookingemailtext ?? '';
         $options->payment_details = $options->payment_details ?? '';
 

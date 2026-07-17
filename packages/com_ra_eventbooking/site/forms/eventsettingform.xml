@@ -259,7 +259,7 @@
             <field name="bookingemailtextrequired" 
                    type="useglobalyesno"
                    global_param="bookingemailtextrequired"
-                   label="Booking email text" 
+                   label="Include Booking email text" 
                    description="Do wish to add custom text to emails sent when places are booked" 
             >
                 <option value="no">JNO</option>

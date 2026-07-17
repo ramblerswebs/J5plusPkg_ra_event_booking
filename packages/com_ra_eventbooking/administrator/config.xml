@@ -188,7 +188,7 @@
         />
         <field name="bookingemailtextrequired" 
                type="list" 
-               label="Booking email text" 
+               label="Include Booking email text" 
                description="Do wish to add custom text to emails sent when places are booked" 
         >
             <option value="0">JNO</option>
