@@ -49,7 +49,6 @@
         <files folder="administrator">
             <filename>access.xml</filename>
             <filename>config.xml</filename>
-            <filename>README.md</filename>
             <folder>forms</folder>
             <folder>src</folder>
             <folder>tmpl</folder>
