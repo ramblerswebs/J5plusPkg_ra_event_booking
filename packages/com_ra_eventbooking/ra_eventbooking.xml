@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="component" version="5.0" method="upgrade">
     <name>com_ra_eventbooking</name>
-    <creationDate>17 July 2026</creationDate>
+    <creationDate>2 October 2026</creationDate>
     <copyright>2025-2026 Ruby Tuesday</copyright>
     <license>GNU General Public License version 2 or later; see LICENSE.txt</license>
     <author>Chris Vaughan </author>
     <authorEmail>ruby.tuesday@ramblers-webs.org.uk</authorEmail>
     <authorUrl>http://ramblers-webs.org.uk</authorUrl>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
     <description>Enable booking of events on a group web site, walks and non walking events</description>
     <namespace path="src">Ramblers\Component\Ra_eventbooking</namespace>
     
@@ -49,6 +49,7 @@
         <files folder="administrator">
             <filename>access.xml</filename>
             <filename>config.xml</filename>
+            <filename>README.md</filename>
             <folder>forms</folder>
             <folder>src</folder>
             <folder>tmpl</folder>

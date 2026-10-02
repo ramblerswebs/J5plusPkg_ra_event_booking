@@ -14,7 +14,7 @@ use Joomla\Database\DatabaseInterface;
 
 defined('_JEXEC') or die;
 
-use Ramblers\Component\Ra_eventbooking\Administrator\Service\Html\RA_EVENTBOOKING;
+//use Ramblers\Component\Ra_eventbooking\Administrator\Service\Html\RA_EVENTBOOKING;
 use Joomla\CMS\Application\SiteApplication;
 use Joomla\CMS\Association\AssociationServiceInterface;
 use Joomla\CMS\Association\AssociationServiceTrait;
@@ -47,7 +47,7 @@ class Ra_eventbookingComponent extends MVCComponent implements RouterServiceInte
     /** @inheritdoc  */
     public function boot(ContainerInterface $container) {
         $db = $container->get(DatabaseInterface::class);
-        $this->getRegistry()->register('ra_eventbooking', new RA_EVENTBOOKING($db));
+        //   $this->getRegistry()->register('ra_eventbooking', new RA_EVENTBOOKING($db));
     }
 
     /**

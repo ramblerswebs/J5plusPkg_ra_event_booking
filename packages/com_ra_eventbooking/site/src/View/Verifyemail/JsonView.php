@@ -74,7 +74,7 @@ class JsonView extends BaseJsonView {
     }
 
     private static function generateCode() {
-
+        $code = '';
         for ($i = 1; $i <= 6; $i++) {
             $code .= strval(rand(0, 9));
         }
