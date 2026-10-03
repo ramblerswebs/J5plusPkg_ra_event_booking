@@ -68,7 +68,8 @@ class BookingcontactField extends FormField {
         $query = $db->createQuery();
         $query->select('*')
                 ->from($db->quoteName('#__users'))
-                ->where($db->quoteName('block') . ' = 0');
+                ->where($db->quoteName('block') . ' = 0')
+                ->order($db->quoteName('name') . ' ASC');
         $db->setQuery($query);
         $users = $db->loadObjectList();
         $options = [];

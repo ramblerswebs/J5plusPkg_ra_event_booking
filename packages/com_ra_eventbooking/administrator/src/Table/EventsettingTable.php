@@ -260,7 +260,7 @@ class EventsettingTable extends Table implements VersionableTableInterface, Tagg
      */
     protected function _getAssetParentId($table = null, $id = null) {
         // We will retrieve the parent-asset from the Asset-table
-        $assetParent = Table::getInstance('Asset');
+        $assetParent = new \Joomla\CMS\Table\Asset($this->getDbo());
 
         // Default: if no asset-parent can be found we take the global asset
         $assetParentId = $assetParent->getRootId();

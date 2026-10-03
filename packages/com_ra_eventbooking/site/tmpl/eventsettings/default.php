@@ -105,7 +105,7 @@ $wa->useStyle('com_ra_eventbooking.list');
                                 echo HTMLHelper::_('jgrid.checkedout', $i, $item->uEditor, $item->checked_out_time, 'eventsetting.', false) . '</a>';
                             }
                             if ($canEdit) {
-                                echo '<a href="' . Route::_('index.php?option=com_ra_eventbooking&task=eventsetting.edit&id=' . (int) $item->id) . '">';
+                                echo '<a href="' . Route::_('index.php?option=com_ra_eventbooking&task=eventsetting.edit&id=' . (int) $item->id) . '" title="Edit record">';
                                 //  echo '<a href="' . Route::_('index.php?option=com_ra_eventbooking&view=eventsetting&id=' . (int) $item->id . '">');
                                 echo $this->escape($item->event_id) . '</a>';
                             } else {
@@ -132,10 +132,10 @@ $wa->useStyle('com_ra_eventbooking.list');
                                 <?php $canCheckin = Factory::getApplication()->getIdentity()->authorise('core.manage', 'com_ra_eventbooking.' . $item->id) || $item->checked_out == Factory::getApplication()->getIdentity()->id; ?>
 
                                 <?php if ($canEdit && $item->checked_out == 0): ?>
-                                    <a href="<?php echo Route::_('index.php?option=com_ra_eventbooking&task=eventsetting.edit&id=' . $item->id, false, 2); ?>" class="btn btn-mini" type="button"><i class="icon-edit" ></i></a>
+                                    <a href="<?php echo Route::_('index.php?option=com_ra_eventbooking&task=eventsetting.edit&id=' . $item->id, false, 2); ?>" class="btn btn-mini" type="button" title="Edit record"><i class="icon-edit" ></i></a>
                                 <?php endif; ?>
                                 <?php if ($canDelete): ?>
-                                    <a href="<?php echo Route::_('index.php?option=com_ra_eventbooking&task=eventsettingform.remove&id=' . $item->id, false, 2); ?>" class="btn btn-mini delete-button" type="button"><i class="icon-trash" ></i></a>
+                                    <a href="<?php echo Route::_('index.php?option=com_ra_eventbooking&task=eventsettingform.remove&id=' . $item->id, false, 2); ?>" class="btn btn-mini delete-button" type="button" title="Delete record"><i class="icon-trash" ></i></a>
                                 <?php endif; ?>
                             </td>
                         <?php endif; ?>
@@ -150,7 +150,7 @@ $wa->useStyle('com_ra_eventbooking.list');
            class="btn btn-success btn-small link-button mintcake"><i
                 class="icon-plus"></i>
             <?php echo Text::_('COM_RA_EVENTBOOKING_ADD_ITEM'); ?></a>
-        <?php endif; ?>
+    <?php endif; ?>
 
     <input type="hidden" name="task" value=""/>
     <input type="hidden" name="boxchecked" value="0"/>

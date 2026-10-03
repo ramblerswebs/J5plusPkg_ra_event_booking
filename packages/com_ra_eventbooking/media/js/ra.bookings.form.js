@@ -238,7 +238,9 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
             period: '7'
         };
 
-        var md5Email = ra.cookie.read("ra-booking");
+        // One cookie per email address, so several people sharing a browser do not overwrite each other
+        var cookieName = "ra-booking-" + this.bookingData.md5Email;
+        var md5Email = ra.cookie.read(cookieName);
         if (this.bookingData.md5Email === md5Email) {
             let event = new Event("userDetailsVerified"); // 
             event.raData = {};
@@ -280,7 +282,7 @@ ra.bookings.formBooking = function (user, ewid, ew, evb, ics) {
                         default:
                             days = saveObj.period;
                     }
-                    ra.cookie.create(this.bookingData.md5Email, "ra-booking", days);
+                    ra.cookie.create(this.bookingData.md5Email, cookieName, days);
                     let event = new Event("userDetailsVerified"); // 
                     event.raData = {};
                     event.raData.okay = true;

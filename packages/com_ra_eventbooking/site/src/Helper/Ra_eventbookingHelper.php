@@ -30,7 +30,16 @@ use Joomla\CMS\Component\ComponentHelper;
 use Joomla\CMS\Table\Extension;
 use Joomla\CMS\Mail\MailTemplate;
 use Joomla\CMS\Mail\MailerFactoryInterface;
+use Joomla\CMS\Mail\Mail;
 use Ramblers\Component\Ra_eventbooking\Site\Helper\Ra_eventbookingHelper as helper;
+// Referenced only behind a class_exists()/RaMailerAvailability::isAvailable()
+// guard (see RaMailerBridgedMailer below) so this component has no hard
+// dependency on ra_mailer - these `use` imports are never resolved unless
+// ra_mailer is actually installed and enabled.
+use Ramblers\Component\Ra_mailer\Administrator\Helper\RaMailerAvailability;
+use Ramblers\Component\Ra_mailer\Administrator\Api\MailerServiceInterface;
+use Ramblers\Component\Ra_mailer\Administrator\Api\MailMessage;
+use Ramblers\Component\Ra_mailer\Administrator\Api\SendResult;
 
 /**
  * Class Ra_eventbookingFrontendHelper
@@ -120,7 +129,7 @@ class Ra_eventbookingHelper {
 
     public static function getPostedData() {
         $input = Factory::getApplication()->getInput();
-        // all posted data is within the data field
+// all posted data is within the data field
         $jsonData = $input->POST->get('data', '', 'raw');
         $data = \json_decode($jsonData);
         if (\json_last_error() !== JSON_ERROR_NONE) {
@@ -135,8 +144,8 @@ class Ra_eventbookingHelper {
     }
 
     public static function getEventsWithBooking() {
-        // return array of ids for active booking records
-        // used by RA Library to know if booking active on an event
+// return array of ids for active booking records
+// used by RA Library to know if booking active on an event
         $db = Factory::getContainer()->get(DatabaseInterface::class);
         $query = $db->createQuery();
         $names = array('event_id');
@@ -213,12 +222,12 @@ class Ra_eventbookingHelper {
 
         $query = $db->createQuery();
 
-        // Fields to update.
+// Fields to update.
         $fields = array(
             $db->quoteName($field) . ' = :field'
         );
 
-        // Conditions for which records should be updated.
+// Conditions for which records should be updated.
         $conditions = array(
             $db->quoteName('event_id') . ' = :event_id'
         );
@@ -293,14 +302,36 @@ class Ra_eventbookingHelper {
 
     public static function sendEmailsToUser($sendToArray, $copy, $replyTo, $template, $fields, $attach = null) {
         $addAttachment = false;
-        if ($attach->type) {
+        if ($attach !== null && $attach->type) {
             if ($attach->type === 'string') {
                 $addAttachment = true;
             }
         }
-        $mailer = Factory::getContainer()->get(MailerFactoryInterface::class)->createMailer();
 
-        // Load the administrator language file so mail template strings are available
+// Route through ra_mailer when it is installed and enabled, so
+// these sends benefit from its queuing/retry/logging - but only
+// ever conditionally: $sendToArray is a list of distinct
+// recipients, each getting their own personalised MailTemplate
+// content per loop iteration below, and RaMailerBridgedMailer
+// (defined at the bottom of this file) still exposes the full
+// Mail API that MailTemplate and the rest of this method rely on
+// (addAddress()/addCc()/addBcc()/addReplyTo()/addAttachment()),
+// so nothing else here needs to change either way.
+//
+// A single entry in $sendToArray means this call sends exactly one
+// email overall, so it goes out immediately (SEND_IMMEDIATE); more
+// than one entry means several distinct, personalised emails are
+// being sent in this one call, so each is queued ASAP instead -
+// avoiding a slow synchronous request when there could be many.
+        $sendImmediately = count($sendToArray) === 1;
+
+        if (\class_exists(RaMailerAvailability::class) && RaMailerAvailability::isAvailable()) {
+            $mailer = new RaMailerBridgedMailer($sendImmediately);
+        } else {
+            $mailer = Factory::getContainer()->get(MailerFactoryInterface::class)->createMailer();
+        }
+
+// Load the administrator language file so mail template strings are available
         $language = Factory::getApplication()->getLanguage();
         $language->load('com_ra_eventbooking', JPATH_ADMINISTRATOR);
 
@@ -318,13 +349,13 @@ class Ra_eventbookingHelper {
             } else {
                 $fields["REPLYTONAME"] = 'Unknown';
             }
-            // Create the mail template instance
+// Create the mail template instance
             $langTag = Factory::getApplication()->getLanguage()->getTag(); // returns e.g. 'en-GB'
             $mailTemplate = new MailTemplate('com_ra_eventbooking.' . $template, $langTag, $mailer);
-            // Supply the tag values - keys must match the tags defined in your SQL params
+// Supply the tag values - keys must match the tags defined in your SQL params
             self::addFieldsToTemplate($mailTemplate, $fields);
 
-            // Add the recipient/copy and replyto
+// Add the recipient/copy and replyto
             $mailTemplate->addRecipient($sendTo->email, $sendTo->name);
             if ($copy !== null) {
                 if (is_array($copy)) {
@@ -343,11 +374,11 @@ class Ra_eventbookingHelper {
                 helper::addStringAttachment($mailer, $attach);
             }
 
-            // Send
+// Send
             try {
                 $mailTemplate->send();
             } catch (\Exception $e) {
-                // Get the full chain
+// Get the full chain
                 $msg = $e->getMessage();
                 $prev = $e->getPrevious();
                 while ($prev) {
@@ -364,29 +395,29 @@ class Ra_eventbookingHelper {
     }
 
     private static function addFieldsToTemplate($mailTemplate, $fields) {
-        // First call: HTML version (all fields as-is)
+// First call: HTML version (all fields as-is)
         $mailTemplate->addTemplateData($fields, false);
 
-        // Convert HTML fields to plain text (e.g., <br> to \n)
+// Convert HTML fields to plain text (e.g., <br> to \n)
         $fieldsPlain = $fields;
         foreach ($fieldsPlain as $key => $value) {
             if (is_string($value)) {
-                // Just convert <br> to newlines (the only thing you really need)
+// Just convert <br> to newlines (the only thing you really need)
                 $value = str_replace(['<br>', '<br />', '<br/>'], "\n", $value);
 
-                // Decode HTML entities
+// Decode HTML entities
                 $value = html_entity_decode($value);
 
-                // Strip ALL tags
+// Strip ALL tags
                 $value = strip_tags($value);
 
-                // Trim whitespace
+// Trim whitespace
                 $value = trim($value);
 
                 $fieldsPlain[$key] = $value;
             }
         }
-        // Second call: plain text version (converted fields)
+// Second call: plain text version (converted fields)
         $mailTemplate->addTemplateData($fieldsPlain, true);
     }
 
@@ -402,10 +433,10 @@ class Ra_eventbookingHelper {
 
         $mailer = Factory::getContainer()->get(MailerFactoryInterface::class)->createMailer();
 
-        // Load the administrator language file so mail template strings are available
+// Load the administrator language file so mail template strings are available
         $language = Factory::getApplication()->getLanguage();
         $language->load('com_ra_eventbooking', JPATH_ADMINISTRATOR);
-        // Create the mail template instance
+// Create the mail template instance
         $langTag = Factory::getApplication()->getLanguage()->getTag(); // returns e.g. 'en-GB'
         $mailTemplate = new MailTemplate('com_ra_eventbooking.' . $template, $langTag, $mailer);
         self::addFieldsToTemplate($mailTemplate, $fields);
@@ -420,14 +451,14 @@ class Ra_eventbookingHelper {
             $mailer->addCC($copy->email, $copy->name);
         }
 
-        // Send
+// Send
         try {
             $send = $mailTemplate->send();
             if (!$send) {
                 Log::add('Unable to send email to ' . $sendTo->name, Log::ERROR, 'com_ra_eventbooking');
             }
         } catch (\Exception $e) {
-            // Get the full chain
+// Get the full chain
             $msg = $e->getMessage();
             $prev = $e->getPrevious();
             while ($prev) {
@@ -445,30 +476,36 @@ class Ra_eventbookingHelper {
         $mimeType = $attach->mimeType;
         $contents = $attach->data;
 
-        // Get Joomla tmp path 
+// Get Joomla tmp path 
         $tmpPath = Factory::getApplication()->get('tmp_path');
         $tmpPath = $tmpPath . "/walkcalendar";
         if (!is_dir($tmpPath)) {
             mkdir($tmpPath, 0755, true);
         }
-        // Build a unique filename
+// Build a unique filename
         $file = $tmpPath . '/cal' . uniqid() . '.ics';
 
-        // Write the string into the file
+// Write the string into the file
         file_put_contents($file, $contents);
 
-        // Now $file is a real file you can attach:
+// Now $file is a real file you can attach:
         $mailer->addAttachment($file, $filename, $encoding, $mimeType);
 
-        // Optionally delete after sending:
+// Optionally delete after sending:
         helper::$attachmentFile = $file;
     }
 
     public static function getUserData() {
         $juser = Factory::getApplication()->getIdentity();
+        if ($juser->email === null) {
+            $emailMD5 = null;
+        } else {
+            $emailMD5 = md5($juser->email);
+        }
+
         $user = (object) ['id' => $juser->id,
                     'name' => $juser->name,
-                    'email' => md5($juser->email),
+                    'email' => $emailMD5,
                     'canEdit' => false
         ];
         if ($user->id > 0) {
@@ -516,11 +553,189 @@ class Ra_eventbookingHelper {
         $globals->send_both_contacts = (boolean) ($globals->send_both_contacts ?? false);
         $globals->send_booking_list_onclosed = (boolean) ($globals->send_booking_list_onclosed ?? false);
         $globals->walk_leader_id = (int) ($globals->walk_leader_id ?? 0);
-        // the following two fields have the values of global, yes or no
+// the following two fields have the values of global, yes or no
         $globals->bookingemailtextrequired = $globals->bookingemailtextrequired ?? 'no';
         $globals->payment_required = $globals->payment_required ?? 'no';
 
         return $globals;
+    }
+}
+
+/**
+ * Bridges Joomla's Mail API to ra_mailer's own documented direct API
+ * (RaMailerAvailability / MailerServiceInterface / MailMessage /
+ * SendResult), for use only by this component's own
+ * Ra_eventbookingHelper::sendEmailsToUser() above. Nothing in ra_mailer
+ * itself is touched or depended upon beyond that public API - this class
+ * lives entirely inside com_ra_eventbooking.
+ *
+ * sendEmailsToUser() builds each recipient's message with
+ * Joomla\CMS\Mail\MailTemplate, which needs a real Mail-compatible object:
+ * it calls addAddress()/addCc()/addBcc()/addReplyTo()/setSubject()/
+ * setBody()/isHtml() and, when a template has its own SMTP override
+ * configured, useSmtp()/isSendmail()/setFrom() too. Extending Mail keeps
+ * every one of those calls working exactly as MailTemplate expects;
+ * only Send() is overridden, to read the fully-populated message back off
+ * itself and hand it to ra_mailer instead of dispatching it directly.
+ *
+ * One instance is created per outer sendEmailsToUser() call and reused
+ * across its per-recipient loop (ClearAllRecipients() resets it each
+ * iteration), so each iteration's personalised content becomes its own
+ * MailMessage / MailerServiceInterface::send() call - immediately
+ * (SEND_IMMEDIATE) when the caller says this is the only email the outer
+ * call is sending, or queued ASAP when it's one of several, so a request
+ * sending many personalised emails doesn't block on sending them all
+ * synchronously.
+ */
+class RaMailerBridgedMailer extends Mail {
+
+    private bool $sendImmediately;
+    private ?string $topic = null;
+
+    public function __construct(bool $sendImmediately = false) {
+        parent::__construct();
+        $this->sendImmediately = $sendImmediately;
+    }
+
+    /**
+     * @param string|null $topic Opaque mailing-preference key for
+     *                           ra_mailer's topic-based unsubscribe
+     *                           tracking (e.g. 'com_ra_eventbooking.
+     *                           event.123.reminder'). Leave null (the
+     *                           default) for mail that shouldn't be
+     *                           opt-out-able at all — a booking
+     *                           confirmation, say. Only takes effect when
+     *                           $sendImmediately is false; ra_mailer
+     *                           ignores a topic on an immediate send.
+     */
+    public function setTopic(?string $topic): self {
+        $this->topic = $topic;
+        return $this;
+    }
+
+    public function Send(): bool { // phpcs:ignore PSR1.Methods.CamelCapsMethodName
+        $raMailerAvailable = \class_exists(RaMailerAvailability::class) && RaMailerAvailability::isAvailable();
+
+        if ($raMailerAvailable) {
+            try {
+                $mode = $this->sendImmediately ? MailerServiceInterface::MODE_SEND_IMMEDIATE : MailerServiceInterface::MODE_QUEUE_ASAP;
+
+                $result = RaMailerAvailability::service()->send(
+                        $this->buildMailMessage(),
+                        $this->buildRecipients(),
+                        ['mode' => $mode]
+                );
+
+                if ($result->status === SendResult::STATUS_FAILED) {
+                    Log::add(
+                            'ra_mailer failed to send email (' . $mode . '): ' . ($result->errorMessage ?? 'unknown error'),
+                            Log::ERROR,
+                            'com_ra_eventbooking'
+                    );
+                    return false;
+                }
+
+                return true;
+            } catch (\Throwable $e) {
+// ra_mailer is pre-1.0 and its API may still evolve - treat
+// an unexpected failure the same as "not available" and
+// fall through to a real, direct send below. This matches
+// RaMailerAvailability's own documented usage pattern.
+                Log::add(
+                        'ra_mailer threw while sending, falling back to direct send: ' . $e->getMessage(),
+                        Log::WARNING,
+                        'com_ra_eventbooking'
+                );
+            }
+        }
+
+        return parent::Send();
+    }
+
+    private function buildMailMessage(): MailMessage {
+        $isHtml = strtolower($this->ContentType ?? '') === 'text/html';
+
+        $replyToAddress = null;
+        $replyToName = null;
+        $replyAddresses = method_exists($this, 'getReplyToAddresses') ? $this->getReplyToAddresses() : [];
+        if (!empty($replyAddresses)) {
+            $first = reset($replyAddresses);
+            $replyToAddress = $first[0] ?? null;
+            $replyToName = $first[1] ?? null;
+        }
+
+        $headers = [];
+        if (method_exists($this, 'getCustomHeaders')) {
+            foreach ($this->getCustomHeaders() as $header) {
+                if (isset($header[0])) {
+                    $headers[(string) $header[0]] = (string) ($header[1] ?? '');
+                }
+            }
+        }
+
+        return new MailMessage(
+                subject: (string) ($this->Subject ?? ''),
+                bodyHtml: $isHtml ? (string) ($this->Body ?? '') : null,
+                bodyText: $isHtml ? ($this->AltBody !== '' ? (string) $this->AltBody : null) : (string) ($this->Body ?? ''),
+                fromAddress: (string) ($this->From ?? ''),
+                fromName: $this->FromName !== '' ? (string) $this->FromName : null,
+                replyToAddress: $replyToAddress,
+                replyToName: $replyToName,
+                headers: $headers,
+                attachments: $this->buildAttachments(),
+                component: 'com_ra_eventbooking',
+                topic: $this->topic,
+        );
+    }
+
+    /**
+     * @return array<int, array{filename: string, path?: string, content?: string, mimeType?: string}>
+     */
+    private function buildAttachments(): array {
+        $attachments = [];
+
+        foreach ($this->getAttachments() as $attachment) {
+            $isStringAttachment = $attachment[5] ?? false;
+            $entry = [
+                'filename' => (string) ($attachment[2] ?? 'attachment'),
+                'mimeType' => (string) ($attachment[4] ?? 'application/octet-stream'),
+            ];
+
+// PHPMailer's internal attachment array shape (per
+// addAttachment()/addStringAttachment() in PHPMailer.php):
+// index 0 holds the path OR the raw content in both cases,
+// never index 1 (which is always the filename).
+            if ($isStringAttachment) {
+                $entry['content'] = $attachment[0] ?? '';
+            } else {
+                $entry['path'] = $attachment[0] ?? '';
+            }
+
+            $attachments[] = $entry;
+        }
+
+        return $attachments;
+    }
+
+    /**
+     * @return array<int, array{email: string, name: string, role: string}>
+     */
+    private function buildRecipients(): array {
+        $recipients = [];
+
+        foreach ($this->getToAddresses() as $address) {
+            $recipients[] = ['email' => $address[0] ?? '', 'name' => $address[1] ?? '', 'role' => 'to'];
+        }
+
+        foreach ($this->getCcAddresses() as $address) {
+            $recipients[] = ['email' => $address[0] ?? '', 'name' => $address[1] ?? '', 'role' => 'cc'];
+        }
+
+        foreach ($this->getBccAddresses() as $address) {
+            $recipients[] = ['email' => $address[0] ?? '', 'name' => $address[1] ?? '', 'role' => 'bcc'];
+        }
+
+        return $recipients;
     }
 }
 
@@ -534,10 +749,10 @@ class evb {
     public $params = null;
     public $actualClosingDate = null;
 
-    //   private $helper;
+//   private $helper;
 
     public function __construct($value, $mode) {
-        //  $this->helper = $helper;
+//  $this->helper = $helper;
         if ($value === null) {
             throw new \RuntimeException('Invalid EVB information [null]');
         }
@@ -572,11 +787,11 @@ class evb {
                 }
             }
         }
-        // payment_required and bookingemailtextrequired need converting to boolean
-        // to pass to js code, never store in this state
+// payment_required and bookingemailtextrequired need converting to boolean
+// to pass to js code, never store in this state
         $options->bookingemailtextrequired = $options->bookingemailtextrequired ?? 'no';
         $options->payment_required = $options->payment_required ?? 'no';
-        // save text value of these two fields for js code summary
+// save text value of these two fields for js code summary
         $options->bookingemailtextrequiredValue = $options->bookingemailtextrequired ?? 'no';
         $options->payment_requiredValue = $options->payment_required ?? 'no';
         $options->bookingemailtext = $options->bookingemailtext ?? '';
@@ -639,17 +854,17 @@ class evb {
     public function checkBooking($newBooking) {
         $currentNoAttendees = $this->blc->noAttendees();
         $extraPlaces = $newBooking->noAttendees();
-        // check if user has existing booking
+// check if user has existing booking
         $currentBooking = $this->blc->hasBooking($newBooking->email);
         if ($currentBooking !== null) {
             $extraPlaces = $extraPlaces - $currentBooking->noAttendees();
         }
-        //  calc remaining places
+//  calc remaining places
         $totalPlaces = $this->options->total_places;
         If ($totalPlaces === 0) {
             $totalPlaces = PHP_INT_MAX;
         }
-        // check booking does not go over total allowed   
+// check booking does not go over total allowed   
         if ($extraPlaces + $currentNoAttendees > $totalPlaces) {
             throw new \RuntimeException('Not enough spare places to make this booking');
         }
@@ -870,7 +1085,7 @@ class evb {
         $fields['BOOKINGLIST'] = $this->blc->getBookingTable($this->options->payment_required, true);
         $fields['WAITINGLIST'] = $this->getWaitingTable(true);
 
-        //  $fields['reason'] = "A booking or the waiting list entry has been updated";
+//  $fields['reason'] = "A booking or the waiting list entry has been updated";
         $fields['EVENTID'] = $this->event_id;
 
         $app = Factory::getApplication();
@@ -893,7 +1108,7 @@ class evb {
     }
 
     public function sendEmailBookingOnClosed() {
-        // sent to booking contacts     
+// sent to booking contacts     
         $to = $this->getEventContacts(true);
         $replyTo = null;
         $bookinglist = $this->blc->getBookingTable($this->options->payment_required, true);
@@ -943,15 +1158,15 @@ class evb {
             default:
                 throw new \RuntimeException('Invalid database update request');
         }
-        //   \updateDBField($ewid, $field, $data, $type);
+//   \updateDBField($ewid, $field, $data, $type);
 
         $db = Factory::getContainer()->get(DatabaseInterface::class);
         $query = $db->createQuery();
-        // Fields to update.
+// Fields to update.
         $fields = array(
             $db->quoteName($field) . ' = :field'
         );
-        // Conditions for which records should be updated.
+// Conditions for which records should be updated.
         $conditions = array(
             $db->quoteName('event_id') . ' = :event_id'
         );
